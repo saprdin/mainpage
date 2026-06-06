@@ -556,6 +556,19 @@ function buildPhotos(){
     const tape=new THREE.Mesh(new THREE.PlaneGeometry(0.46,0.16), new THREE.MeshBasicMaterial({color:0xfffbe9, transparent:true, opacity:0.45, toneMapped:false}));
     tape.position.set(0, h/2, 0.02); tape.rotation.z=(i%2?0.22:-0.22); sub.add(tape);
   });
+  // 사진 더미 아래 바닥에 COMING SOON
+  const fc=document.createElement('canvas'); fc.width=1280; fc.height=300; const fx=fc.getContext('2d');
+  const ft=new THREE.CanvasTexture(fc); ft.encoding=THREE.sRGBEncoding; ft.anisotropy=4;
+  function drawFloor(){
+    fx.clearRect(0,0,1280,300); fx.textAlign='center'; fx.textBaseline='middle';
+    fx.shadowColor='rgba(255,216,74,0.9)'; fx.shadowBlur=32; fx.fillStyle='#ffd84a';
+    fx.font='78px "Press Start 2P",monospace'; fx.fillText('COMING SOON', 640, 120);
+    fx.shadowBlur=10; fx.fillStyle='rgba(255,216,74,0.7)'; fx.font='34px "Galmuri11","Noto Sans KR",sans-serif';
+    fx.fillText('곧 공개', 640, 220); fx.shadowBlur=0; ft.needsUpdate=true;
+  }
+  drawFloor(); if(document.fonts){ try{ document.fonts.ready.then(drawFloor); }catch(e){} }
+  const floorSign=new THREE.Mesh(new THREE.PlaneGeometry(7.2,1.7), new THREE.MeshBasicMaterial({map:ft, transparent:true, toneMapped:false, depthWrite:false}));
+  floorSign.rotation.x=-Math.PI/2; floorSign.position.set(0, 0.04, -HALF+4.2); scene.add(floorSign);
 }
 
 function buildTarot(){
