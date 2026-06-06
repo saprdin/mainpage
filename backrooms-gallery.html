@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SIA.SYS — THE BACKROOMS · GALLERY</title>
+<meta name="description" content="백룸 벽에 걸린 시아의 작품들. 드래그하여 둘러보고 액자를 눌러 확인하세요." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#f0ead9; --ink-dim:rgba(240,234,217,.6); --ink-faint:rgba(240,234,217,.34);
+    --amber:#e9bf57; --line:rgba(240,234,217,.18); --panel:rgba(18,13,6,.86);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; overflow:hidden; background:#0b0805; }
+  body{ font-family:'Space Grotesk','Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; }
+
+  /* ───── 백룸 방(가로 스크롤 가능한 긴 벽) ───── */
+  .room{ position:fixed; inset:0; overflow-x:auto; overflow-y:hidden; cursor:grab; scrollbar-width:none; }
+  .room::-webkit-scrollbar{ display:none; }
+  .room.grabbing{ cursor:grabbing; }
+  .wall{ position:relative; height:100%; width:max(100%, 1820px);
+    filter:url(#vhsCA); animation:vhsGlitch 6.5s steps(1,end) infinite; will-change:transform; }
+  @keyframes vhsGlitch{
+    0%,95.5%,100%{ transform:translateX(0) skewX(0deg); }
+    96%{ transform:translateX(-5px) skewX(-0.8deg); }
+    97%{ transform:translateX(6px) skewX(0.8deg); }
+    98%{ transform:translateX(-3px) skewX(-0.4deg); }
+    99%{ transform:translateX(2px); }
+  }
+
+  /* 벽지(머스타드) */
+  .wall::before{ content:''; position:absolute; inset:0; z-index:0;
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.05) 0 1px, transparent 1px 30px),
+      linear-gradient(180deg, #b9a850 0%, #ab9942 50%, #8c7c33 86%);
+  }
+  /* 천장 */
+  .ceiling{ position:absolute; top:0; left:0; right:0; height:15%; z-index:1;
+    background:linear-gradient(180deg, #d9d0af, #c2b488 70%, #ab9d72);
+    box-shadow:0 6px 14px rgba(0,0,0,.35); }
+  .lamp{ position:absolute; top:30%; height:12px; width:190px; border-radius:3px;
+    background:#fff7e0; box-shadow:0 0 34px 12px rgba(255,238,196,.65); }
+  /* 천장 빛이 벽으로 번지는 글로우 */
+  .glow{ position:absolute; top:14%; width:420px; height:62%; z-index:1; pointer-events:none;
+    background:radial-gradient(ellipse at 50% 0%, rgba(255,236,180,.28), transparent 62%); transform:translateX(-50%); }
+  /* 굽도리 + 바닥(원근) */
+  .baseboard{ position:absolute; bottom:18%; left:0; right:0; height:12px; z-index:2;
+    background:linear-gradient(#5a4a22,#3c3016); box-shadow:0 2px 6px rgba(0,0,0,.4); }
+  .floor{ position:absolute; bottom:0; left:0; right:0; height:18%; z-index:1; overflow:hidden;
+    background:linear-gradient(180deg,#6e5f2e,#473c1d); box-shadow:inset 0 10px 26px rgba(0,0,0,.45); }
+  .floor::before{ content:''; position:absolute; inset:-40% -20% -10% -20%;
+    background-image:linear-gradient(rgba(0,0,0,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.12) 1px, transparent 1px);
+    background-size:64px 64px; transform:perspective(280px) rotateX(64deg); transform-origin:50% 0; opacity:.5; }
+
+  /* ───── 액자 ───── */
+  .frame{ position:absolute; z-index:3; cursor:pointer; padding:11px; border-radius:3px;
+    background:linear-gradient(145deg,#7a6230,#4a3a1a);
+    box-shadow:0 22px 34px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.4), inset 0 0 0 2px rgba(255,235,180,.18);
+    transition:transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s, filter .35s; }
+  .frame .mat{ position:relative; padding:10px; background:#1a1206; border-radius:2px; height:100%;
+    box-shadow:inset 0 2px 10px rgba(0,0,0,.6); }
+  .frame img{ display:block; width:100%; height:100%; object-fit:cover; border-radius:1px; background:#0c0905;
+    box-shadow:0 0 0 1px rgba(0,0,0,.5); }
+  .frame .plate{ position:absolute; left:50%; bottom:-30px; transform:translateX(-50%); white-space:nowrap;
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.18em; color:var(--ink-faint); text-transform:uppercase; }
+  .frame:hover{ transform:translateY(-10px) scale(1.035); filter:brightness(1.08);
+    box-shadow:0 34px 56px rgba(0,0,0,.6), 0 0 0 2px var(--amber), 0 0 28px rgba(233,191,87,.35); z-index:6; }
+  .frame:hover .plate{ color:var(--amber); }
+
+  /* ───── HUD ───── */
+  .hud{ position:fixed; inset:0; z-index:20; pointer-events:none; }
+  .hud .tl{ position:absolute; top:22px; left:24px; }
+  .hud .tr{ position:absolute; top:22px; right:24px; display:flex; gap:8px; pointer-events:auto; }
+  .hud .bc{ position:absolute; bottom:20px; left:50%; transform:translateX(-50%); }
+  .brand{ font-weight:600; font-size:15px; letter-spacing:.16em; text-shadow:0 2px 8px rgba(0,0,0,.6); }
+  .brand .dim{ color:var(--ink-faint); font-weight:400; }
+  .sublabel{ margin-top:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; color:var(--ink-dim); text-transform:uppercase; text-shadow:0 2px 6px rgba(0,0,0,.6); }
+  .hbtn{ pointer-events:auto; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.18em; text-decoration:none;
+    color:var(--ink-dim); background:rgba(20,16,9,.55); border:1px solid var(--line); padding:8px 11px; border-radius:7px; cursor:pointer;
+    transition:color .25s,border-color .25s,background .25s; text-transform:uppercase; }
+  .hbtn:hover{ color:var(--ink); border-color:rgba(240,234,217,.45); background:rgba(30,24,12,.65); }
+  .scroll-hint{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.24em; color:var(--ink-faint);
+    text-transform:uppercase; text-shadow:0 2px 6px rgba(0,0,0,.7); animation:sway 2.6s ease-in-out infinite; }
+  @keyframes sway{ 0%,100%{opacity:.4} 50%{opacity:.9} }
+
+  /* ───── VHS / 화면 질감 ───── */
+  .grain{ position:fixed; inset:0; z-index:30; pointer-events:none; opacity:.10; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:150px 150px; animation:grain .8s steps(1) infinite; }
+  @keyframes grain{ 0%{background-position:0 0}25%{background-position:-20px 8px}50%{background-position:14px -16px}75%{background-position:-10px 18px}100%{background-position:0 0} }
+  .scan{ position:fixed; inset:0; z-index:31; pointer-events:none; mix-blend-mode:multiply; opacity:.62;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 1px, rgba(0,0,0,.15) 2px, rgba(0,0,0,.15) 3px); }
+  .scan::after{ content:''; position:absolute; left:0; right:0; height:130px;
+    background:linear-gradient(rgba(255,255,255,0), rgba(255,255,255,.11), rgba(255,255,255,0)); animation:track 5s linear infinite; }
+  @keyframes track{ 0%{top:-14%} 100%{top:114%} }
+  /* 롤링 트래킹/헤드스위치 노이즈 바 */
+  .roll{ position:fixed; left:0; right:0; height:28px; z-index:31; pointer-events:none; opacity:.55; filter:blur(1px);
+    background:linear-gradient(rgba(255,255,255,0), rgba(255,255,255,.13) 38%, rgba(0,0,0,.24) 62%, rgba(255,255,255,0)); animation:roll 8.5s linear infinite; }
+  @keyframes roll{ 0%{top:-8%} 100%{top:108%} }
+  .vig{ position:fixed; inset:0; z-index:32; pointer-events:none;
+    background:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.44) 100%);
+    animation:flick 5s steps(2) infinite; }
+  @keyframes flick{ 0%,87%,100%{opacity:1} 88%{opacity:.72} 90%{opacity:.95} 92%{opacity:.66} 94%{opacity:.9} }
+  @media (prefers-reduced-motion:reduce){ .grain,.scan::after,.roll,.vig,.wall{ animation:none } }
+
+  /* ───── 라이트박스(상세) ───── */
+  .lb{ position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:24px; gap:0;
+    background:rgba(5,4,2,.78); backdrop-filter:blur(8px); opacity:0; pointer-events:none; transition:opacity .35s; }
+  .lb.open{ opacity:1; pointer-events:auto; }
+  .lb-card{ width:min(940px,96vw); max-height:92vh; display:flex; gap:0; flex-direction:column; }
+  .lb-figure{ position:relative; transform:scale(.97); transition:transform .4s cubic-bezier(.2,.8,.2,1); }
+  .lb.open .lb-figure{ transform:none; }
+  .lb-img{ display:block; width:100%; max-height:62vh; object-fit:contain; background:#0c0905;
+    border:1px solid var(--line); border-radius:10px; box-shadow:0 30px 80px rgba(0,0,0,.6); }
+  .lb-bar{ display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-top:18px; flex-wrap:wrap; }
+  .lb-meta{ min-width:0; }
+  .lb-idx{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.3em; color:var(--ink-faint); text-transform:uppercase; }
+  .lb-tag{ display:inline-block; margin-top:10px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.18em;
+    color:var(--amber); border:1px solid rgba(233,191,87,.45); border-radius:999px; padding:5px 12px; text-transform:uppercase; }
+  .lb-title{ margin-top:12px; font-weight:500; font-size:clamp(22px,4.5vw,30px); letter-spacing:.01em; }
+  .lb-desc{ margin-top:10px; font-family:'Noto Sans KR',sans-serif; font-weight:300; font-size:14px; line-height:1.8; color:var(--ink-dim); max-width:60ch; }
+  .lb-actions{ display:flex; align-items:center; gap:16px; }
+  .magnetic{ position:relative; }
+  .open-btn{ display:inline-flex; align-items:center; gap:9px; cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:13px;
+    letter-spacing:.2em; text-transform:uppercase; color:#15100a; background:var(--amber); border:none; border-radius:999px; padding:14px 24px;
+    transition:transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s; will-change:transform; box-shadow:0 8px 30px rgba(233,191,87,.3); white-space:nowrap; }
+  .open-btn .lbl{ display:inline-block; transition:transform .25s cubic-bezier(.2,.8,.2,1); }
+  .open-btn:hover{ box-shadow:0 12px 40px rgba(233,191,87,.45); }
+  .lb-nav{ position:absolute; top:50%; transform:translateY(-50%); font-size:30px; color:var(--ink-dim); cursor:pointer; padding:14px; user-select:none; transition:color .2s; }
+  .lb-nav:hover{ color:var(--ink); }
+  .lb-prev{ left:-6px; } .lb-next{ right:-6px; }
+  .lb-close{ position:absolute; top:-2px; right:-2px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.18em;
+    color:var(--ink-faint); cursor:pointer; text-transform:uppercase; }
+  .lb-close:hover{ color:var(--amber); }
+  @media (max-width:680px){ .hud .tl,.hud .bc{ } .lb-nav{ font-size:22px; padding:8px; } }
+</style>
+</head>
+<body>
+
+<!-- VHS 색수차 필터 정의 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="vhsCA" x="-3%" y="-3%" width="106%" height="106%" color-interpolation-filters="sRGB">
+    <feColorMatrix type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>
+    <feOffset in="r" dx="2.4" dy="0" result="ro"/>
+    <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="g"/>
+    <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="b"/>
+    <feOffset in="b" dx="-2.4" dy="0" result="bo"/>
+    <feBlend in="ro" in2="g" mode="screen" result="rg"/>
+    <feBlend in="rg" in2="bo" mode="screen"/>
+  </filter>
+</svg>
+
+<!-- 백룸 방 -->
+<div class="room" id="room">
+  <div class="wall" id="wall">
+    <div class="ceiling" id="ceiling"></div>
+    <div class="baseboard"></div>
+    <div class="floor"></div>
+    <!-- 액자는 JS가 채움 -->
+  </div>
+</div>
+
+<!-- HUD -->
+<div class="hud">
+  <div class="tl">
+    <div class="brand">SIA<span class="dim">.SYS</span></div>
+    <div class="sublabel" id="sublabel">// LEVEL 0 — 갤러리</div>
+  </div>
+  <div class="tr">
+    <a class="hbtn" href="index.html" id="hubBtn">← HUB</a>
+    <button class="hbtn" id="langBtn">EN</button>
+  </div>
+  <div class="bc"><div class="scroll-hint" id="scrollHint">◂ 드래그하여 둘러보기 ▸</div></div>
+</div>
+
+<!-- VHS -->
+<div class="grain"></div>
+<div class="scan"></div>
+<div class="roll"></div>
+<div class="vig"></div>
+
+<!-- 라이트박스 -->
+<div class="lb" id="lb">
+  <div class="lb-card">
+    <div class="lb-figure">
+      <img class="lb-img" id="lbImg" src="" alt="">
+      <span class="lb-nav lb-prev" id="lbPrev">‹</span>
+      <span class="lb-nav lb-next" id="lbNext">›</span>
+      <span class="lb-close" id="lbClose">✕ ESC</span>
+    </div>
+    <div class="lb-bar">
+      <div class="lb-meta">
+        <div class="lb-idx" id="lbIdx">01 / 05</div>
+        <span class="lb-tag" id="lbTag">TAG</span>
+        <div class="lb-title" id="lbTitle">Title</div>
+        <div class="lb-desc" id="lbDesc">desc</div>
+      </div>
+      <div class="lb-actions">
+        <span class="magnetic" id="mag"><button class="open-btn" id="openBtn"><span class="lbl" id="openLbl">▶ 게임 열기</span></button></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   SIA.SYS — THE BACKROOMS GALLERY (순수 HTML/CSS, file:// 에서도 동작)
+   - 벽에 걸 사진/게임 정보는 GAME / PHOTOS 만 고치면 됨.
+   ========================================================================= */
+const GAME = {
+  url:'../../../Project/DeepHero/기획서/homepage/타이틀/index.html', // 옛 타이틀(백룸 러너)
+  external:false,
+  tag:{ ko:'백룸 러너 · 데모', en:'BACKROOMS RUN · DEMO' },
+  name:{ ko:'구독자님, 저기로 갈까요?', en:'SHALL WE GO THERE?' },
+  desc:{ ko:'AI 스트리머 시아와 함께 백룸을 탈출하는 러너. 시청자가 채팅으로 훈수를 두고, 스마일러를 피해 탈출구를 찾는다.',
+        en:'A backrooms-escape runner with AI streamer Sia. Viewers backseat via chat; dodge the Smiler, find the exit.' }
+};
+// 벽에 걸린 사진들 — x/y는 wall 기준 %, w/h는 px, rot 살짝
+const PHOTOS = [
+  { src:'assets/shot1.png', x:5,  y:23, w:380, h:238, rot:-1.2, t:{ko:'플레이 #1',en:'GAMEPLAY #1'} },
+  { src:'assets/shot2.png', x:27, y:19, w:300, h:188, rot:1.0,  t:{ko:'플레이 #2',en:'GAMEPLAY #2'} },
+  { src:'assets/sia.png',   x:44, y:22, w:210, h:280, rot:0,    t:{ko:'시아 · 캐릭터',en:'SIA · CHARACTER'}, portrait:true },
+  { src:'assets/shot3.png', x:60, y:21, w:330, h:206, rot:-0.8, t:{ko:'플레이 #3',en:'GAMEPLAY #3'} },
+  { src:'assets/shot4.png', x:80, y:25, w:350, h:219, rot:1.2,  t:{ko:'플레이 #4',en:'GAMEPLAY #4'} },
+];
+
+const UI = {
+  ko:{ next:'EN', sublabel:'// LEVEL 0 — 갤러리', hint:'◂ 드래그하여 둘러보기 ▸', open:'▶ 게임 열기', hub:'← 허브' },
+  en:{ next:'KR', sublabel:'// LEVEL 0 — GALLERY', hint:'◂ DRAG TO EXPLORE ▸', open:'▶ OPEN GAME', hub:'← HUB' }
+};
+let lang = localStorage.getItem('sia_g_lang') || ((navigator.language||'en').toLowerCase().startsWith('ko')?'ko':'en');
+
+const wall = document.getElementById('wall');
+const room = document.getElementById('room');
+
+/* 천장 램프 + 글로우 배치 */
+(function(){
+  for(let i=0;i<7;i++){
+    const lamp=document.createElement('div'); lamp.className='lamp'; lamp.style.left=(6+i*14)+'%'; wall.appendChild(lamp);
+    const glow=document.createElement('div'); glow.className='glow'; glow.style.left=(6+i*14)+'%'; wall.appendChild(glow);
+  }
+})();
+
+/* 액자 생성 */
+const frameEls=[];
+PHOTOS.forEach((p,i)=>{
+  const f=document.createElement('div'); f.className='frame';
+  f.style.left=p.x+'%'; f.style.top=p.y+'%'; f.style.width=p.w+'px'; f.style.height=p.h+'px';
+  f.style.transform=`rotate(${p.rot}deg)`; f.dataset.base=`rotate(${p.rot}deg)`;
+  f.innerHTML=`<div class="mat"><img src="${p.src}" alt=""></div><div class="plate">${p.t[lang]}</div>`;
+  f.addEventListener('click', ()=>{ if(!dragged) openLB(i); });
+  wall.appendChild(f); frameEls.push(f);
+});
+
+/* 드래그 / 휠로 가로 둘러보기 */
+let down=false, sx=0, sl=0, dragged=false;
+room.addEventListener('mousedown', e=>{ down=true; dragged=false; sx=e.pageX; sl=room.scrollLeft; room.classList.add('grabbing'); });
+window.addEventListener('mouseup', ()=>{ down=false; room.classList.remove('grabbing'); });
+window.addEventListener('mousemove', e=>{ if(!down) return; const dx=e.pageX-sx; if(Math.abs(dx)>4) dragged=true; room.scrollLeft=sl-dx; });
+room.addEventListener('wheel', e=>{ if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){ room.scrollLeft+=e.deltaY; e.preventDefault(); } }, {passive:false});
+
+/* 라이트박스 */
+const lb=document.getElementById('lb'), lbImg=document.getElementById('lbImg');
+let cur=0;
+function openLB(i){
+  cur=(i+PHOTOS.length)%PHOTOS.length; const p=PHOTOS[cur];
+  lbImg.src=p.src; lbImg.alt=p.t[lang];
+  document.getElementById('lbIdx').textContent=String(cur+1).padStart(2,'0')+' / '+String(PHOTOS.length).padStart(2,'0');
+  document.getElementById('lbTag').textContent=GAME.tag[lang];
+  document.getElementById('lbTitle').textContent=GAME.name[lang];
+  document.getElementById('lbDesc').textContent=GAME.desc[lang];
+  lb.classList.add('open');
+}
+function closeLB(){ lb.classList.remove('open'); }
+document.getElementById('lbClose').addEventListener('click', closeLB);
+document.getElementById('lbPrev').addEventListener('click', ()=>openLB(cur-1));
+document.getElementById('lbNext').addEventListener('click', ()=>openLB(cur+1));
+lb.addEventListener('click', e=>{ if(e.target===lb) closeLB(); });
+document.addEventListener('keydown', e=>{
+  if(!lb.classList.contains('open')) return;
+  if(e.key==='Escape') closeLB(); else if(e.key==='ArrowLeft') openLB(cur-1); else if(e.key==='ArrowRight') openLB(cur+1);
+});
+document.getElementById('openBtn').addEventListener('click', ()=>{ if(GAME.external) window.open(GAME.url,'_blank'); else location.href=GAME.url; });
+
+/* 마그네틱 버튼 */
+(function(){ const mag=document.getElementById('mag'), btn=document.getElementById('openBtn'), lbl=document.getElementById('openLbl'); const S=0.4;
+  mag.addEventListener('mousemove', e=>{ const r=btn.getBoundingClientRect(); const dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2);
+    btn.style.transform=`translate(${dx*S}px,${dy*S}px)`; lbl.style.transform=`translate(${dx*S*.5}px,${dy*S*.5}px)`; });
+  mag.addEventListener('mouseleave', ()=>{ btn.style.transform=''; lbl.style.transform=''; });
+})();
+
+/* 언어 */
+function applyLang(){
+  const u=UI[lang]; document.documentElement.lang=lang;
+  document.getElementById('langBtn').textContent=u.next;
+  document.getElementById('sublabel').textContent=u.sublabel;
+  document.getElementById('scrollHint').textContent=u.hint;
+  document.getElementById('hubBtn').textContent=u.hub;
+  document.getElementById('openLbl').textContent=u.open;
+  frameEls.forEach((f,i)=>{ f.querySelector('.plate').textContent=PHOTOS[i].t[lang]; });
+  if(lb.classList.contains('open')) openLB(cur);
+}
+document.getElementById('langBtn').addEventListener('click', ()=>{ lang=lang==='ko'?'en':'ko'; localStorage.setItem('sia_g_lang',lang); applyLang(); });
+applyLang();
+window.__gallery={ frames:frameEls.length, ready:true };
+</script>
+</body>
+</html>

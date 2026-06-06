@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>SIA.SYS — THE BACKROOMS</title>
+<meta name="description" content="백룸을 걸어다니며 시아의 프로젝트를 발견하세요. SIA.SYS 인터랙티브 포트폴리오." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#ece7d6; --ink-dim:rgba(236,231,214,.55); --ink-faint:rgba(236,231,214,.32);
+    --amber:#e3b24a; --amber-soft:#caa24e; --line:rgba(236,231,214,.16); --panel:rgba(14,11,6,.82);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; overflow:hidden; background:#0b0805; }
+  body{ font-family:'Space Grotesk','Noto Sans KR',sans-serif; color:var(--ink);
+    -webkit-tap-highlight-color:transparent; user-select:none; cursor:default; }
+  canvas{ display:block; }
+  #app{ position:fixed; inset:0; }
+  .mono{ font-family:'JetBrains Mono',monospace; }
+
+  /* ── VHS / 화면 질감 ── */
+  .grain{ position:fixed; inset:0; z-index:50; pointer-events:none; opacity:.035; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:160px 160px; animation:grain .8s steps(1) infinite; }
+  @keyframes grain{ 0%{background-position:0 0}25%{background-position:-22px 10px}50%{background-position:16px -18px}75%{background-position:-12px 20px}100%{background-position:0 0} }
+  .vignette{ position:fixed; inset:0; z-index:51; pointer-events:none;
+    background:radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,.28) 100%); }
+  /* 화면 전체 스캔라인(UI 포함) + 트래킹 바 */
+  .vhs{ position:fixed; inset:0; z-index:55; pointer-events:none; mix-blend-mode:multiply; opacity:.3;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.07) 3px, rgba(0,0,0,.07) 4px); }
+  .vhs::after{ content:''; position:absolute; left:0; right:0; height:90px;
+    background:linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,.05), rgba(255,255,255,0));
+    animation:track 7s linear infinite; }
+  @keyframes track{ 0%{ top:-12%; } 100%{ top:112%; } }
+  @media (prefers-reduced-motion:reduce){ .grain{animation:none} .vhs::after{animation:none; display:none} }
+
+  /* ── HUD ── */
+  .hud{ position:fixed; inset:0; z-index:40; pointer-events:none; }
+  .hud .tl{ position:absolute; top:22px; left:24px; }
+  .hud .tr{ position:absolute; top:22px; right:24px; display:flex; gap:8px; pointer-events:auto; }
+  .hud .bl{ position:absolute; bottom:22px; left:24px; }
+  .brand{ font-weight:600; font-size:15px; letter-spacing:.16em; }
+  .brand .dim{ color:var(--ink-faint); font-weight:400; }
+  .sublabel{ margin-top:7px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; color:var(--ink-dim); text-transform:uppercase; }
+  .hbtn{ pointer-events:auto; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.18em;
+    color:var(--ink-dim); background:rgba(20,16,9,.5); border:1px solid var(--line); padding:8px 11px; border-radius:7px;
+    cursor:pointer; transition:color .25s,border-color .25s,background .25s; text-transform:uppercase; }
+  .hbtn:hover{ color:var(--ink); border-color:rgba(236,231,214,.4); background:rgba(30,24,12,.6); }
+  .controls-hint{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.14em; color:var(--ink-faint); line-height:1.9; }
+  .controls-hint kbd{ color:var(--ink-dim); border:1px solid var(--line); border-radius:4px; padding:1px 6px; margin:0 1px; font-family:inherit; }
+
+  .reticle{ position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:39; pointer-events:none;
+    width:22px; height:22px; opacity:0; transition:opacity .4s, width .25s, height .25s; }
+  .reticle.show{ opacity:1; }
+  .reticle::before{ content:''; position:absolute; inset:0; border:1px solid rgba(236,231,214,.5); border-radius:50%; }
+  .reticle::after{ content:''; position:absolute; top:50%; left:50%; width:2px; height:2px; transform:translate(-50%,-50%); background:var(--ink); border-radius:50%; }
+  .reticle.active{ width:34px; height:34px; }
+  .reticle.active::before{ border-color:var(--amber); box-shadow:0 0 0 1px rgba(227,178,74,.25); }
+
+  .hint{ position:fixed; left:50%; bottom:14%; transform:translate(-50%,12px); z-index:41; pointer-events:none;
+    display:flex; align-items:center; gap:12px; padding:11px 18px; background:var(--panel); border:1px solid var(--line);
+    border-radius:10px; opacity:0; transition:opacity .3s, transform .3s; backdrop-filter:blur(6px); }
+  .hint.show{ opacity:1; transform:translate(-50%,0); }
+  .hint .key{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.1em; color:var(--amber);
+    border:1px solid rgba(227,178,74,.4); border-radius:5px; padding:4px 8px; }
+  .hint .ht{ font-size:14px; letter-spacing:.02em; }
+  .hint .ht small{ display:block; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.2em; color:var(--ink-faint); text-transform:uppercase; margin-top:2px; }
+
+  .screen{ position:fixed; inset:0; z-index:45; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:32px; cursor:pointer;
+    background:radial-gradient(ellipse at 50% 42%, rgba(40,30,12,.5), rgba(7,5,2,.92) 78%);
+    backdrop-filter:blur(3px); transition:opacity .6s ease; opacity:1; }
+  .screen.hidden{ opacity:0; pointer-events:none; }
+  .screen .eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.42em; color:var(--amber-soft); text-transform:uppercase; margin-bottom:26px; }
+  .screen h1{ font-weight:300; font-size:clamp(34px,8vw,76px); letter-spacing:.04em; line-height:1.05; }
+  .screen h1 b{ font-weight:600; }
+  .screen .sub{ margin-top:18px; font-size:15px; color:var(--ink-dim); font-weight:300; letter-spacing:.04em; max-width:32ch; line-height:1.7; }
+  .screen .enter{ margin-top:42px; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.3em; text-transform:uppercase;
+    color:var(--ink); border:1px solid var(--line); border-radius:999px; padding:15px 30px; transition:border-color .3s,background .3s,letter-spacing .3s; }
+  .screen:hover .enter{ border-color:rgba(227,178,74,.6); background:rgba(227,178,74,.06); letter-spacing:.36em; }
+  .screen .legend{ margin-top:34px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.12em; color:var(--ink-faint); line-height:2; }
+  .screen .legend kbd{ color:var(--ink-dim); border:1px solid var(--line); border-radius:4px; padding:1px 7px; }
+
+  /* ── 상세 모달 ── */
+  .modal{ position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; padding:24px;
+    background:rgba(5,4,2,.62); backdrop-filter:blur(10px); opacity:0; pointer-events:none; transition:opacity .35s ease; }
+  .modal.open{ opacity:1; pointer-events:auto; }
+  .card{ position:relative; width:min(620px,95vw); max-height:90vh; overflow:auto;
+    background:linear-gradient(180deg, rgba(22,17,9,.97), rgba(12,9,5,.98)); border:1px solid var(--line); border-radius:16px;
+    padding:32px 32px 28px; transform:translateY(16px) scale(.98); transition:transform .4s cubic-bezier(.2,.8,.2,1);
+    box-shadow:0 30px 80px rgba(0,0,0,.6); }
+  .modal.open .card{ transform:none; }
+  .card .accent{ position:absolute; top:0; left:0; right:0; height:2px; background:var(--c,#e3b24a); opacity:.85; }
+  .card .idx{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.3em; color:var(--ink-faint); text-transform:uppercase; }
+  .card .tag{ display:inline-block; margin-top:14px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.18em;
+    color:var(--c,#e3b24a); border:1px solid color-mix(in srgb, var(--c,#e3b24a) 45%, transparent); border-radius:999px; padding:5px 12px; text-transform:uppercase; }
+  .card h2{ margin-top:16px; font-weight:500; font-size:clamp(24px,5vw,32px); letter-spacing:.01em; line-height:1.2; }
+  .card p{ margin-top:14px; font-family:'Noto Sans KR',sans-serif; font-weight:300; font-size:14.5px; line-height:1.85; color:var(--ink-dim); }
+  .shots{ margin-top:22px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .shots img{ width:100%; aspect-ratio:16/10; object-fit:cover; border:1px solid var(--line); border-radius:8px; display:block; background:#0c0905; }
+  .card .row{ margin-top:26px; display:flex; align-items:center; gap:18px; }
+  .magnetic{ position:relative; }
+  .enter-btn{ display:inline-flex; align-items:center; gap:10px; cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:13px;
+    letter-spacing:.2em; text-transform:uppercase; color:#15100a; background:var(--c,#e3b24a); border:none; border-radius:999px; padding:15px 26px;
+    transition:transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s; will-change:transform; box-shadow:0 8px 30px color-mix(in srgb, var(--c,#e3b24a) 30%, transparent); }
+  .enter-btn .lbl{ display:inline-block; transition:transform .25s cubic-bezier(.2,.8,.2,1); will-change:transform; }
+  .enter-btn:hover{ box-shadow:0 12px 40px color-mix(in srgb, var(--c,#e3b24a) 45%, transparent); }
+  .close-btn{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.18em; color:var(--ink-faint); background:none; border:none; cursor:pointer; text-transform:uppercase; transition:color .25s; }
+  .close-btn:hover{ color:var(--ink); }
+
+  .loading{ position:fixed; inset:0; z-index:70; display:flex; align-items:center; justify-content:center; background:#0b0805;
+    font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.3em; color:var(--ink-faint); text-transform:uppercase; transition:opacity .6s; }
+  .loading.hidden{ opacity:0; pointer-events:none; }
+  .err{ max-width:520px; text-align:center; line-height:1.9; color:var(--ink-dim); }
+
+  .touch{ position:fixed; inset:0; z-index:42; pointer-events:none; display:none; }
+  .touch.on{ display:block; }
+  .walk-btn{ position:absolute; left:50%; bottom:28px; transform:translateX(-50%); pointer-events:auto; width:74px; height:74px; border-radius:50%;
+    border:1px solid var(--line); background:rgba(20,16,9,.5); display:flex; align-items:center; justify-content:center; color:var(--ink-dim); font-size:22px; }
+  .walk-btn:active{ background:rgba(227,178,74,.15); color:var(--amber); }
+
+  @media (max-width:680px){ .hud .tl,.hud .bl{ left:16px; } .hud .tr{ right:16px; } .controls-hint{ display:none; } .shots{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div class="grain"></div>
+<div class="vignette"></div>
+<div class="vhs"></div>
+
+<div class="hud">
+  <div class="tl">
+    <div class="brand">SIA<span class="dim">.SYS</span></div>
+    <div class="sublabel" id="sublabel">// LEVEL 0 — GALLERY</div>
+  </div>
+  <div class="tr">
+    <button class="hbtn" id="langBtn">EN</button>
+    <button class="hbtn" id="sndBtn">SOUND</button>
+  </div>
+  <div class="bl">
+    <div class="controls-hint" id="ctlHint"></div>
+  </div>
+</div>
+
+<div class="reticle" id="reticle"></div>
+
+<div class="hint" id="hint">
+  <span class="key">E</span>
+  <span class="ht"><span id="hintName">—</span><small id="hintTag">inspect</small></span>
+</div>
+
+<div class="touch" id="touch"><div class="walk-btn" id="walkBtn">▲</div></div>
+
+<div class="screen" id="startScreen">
+  <div class="eyebrow" id="scEyebrow">SIA.SYS // LEVEL 0</div>
+  <h1 id="scTitle">THE <b>BACKROOMS</b></h1>
+  <div class="sub" id="scSub">노란 형광등의 방. 정면의 액자로 걸어가 작품을 확인하세요.</div>
+  <div class="enter" id="scEnter">▸ 클릭하여 입장</div>
+  <div class="legend" id="scLegend"></div>
+</div>
+
+<div class="screen hidden" id="pauseScreen">
+  <div class="eyebrow">PAUSED</div>
+  <h1 style="font-size:clamp(26px,5vw,42px)" id="psTitle">잠시 멈춤</h1>
+  <div class="enter" id="psEnter">▸ 클릭하여 계속</div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="card" id="card">
+    <div class="accent"></div>
+    <div class="idx" id="mIdx">PIECE 01</div>
+    <span class="tag" id="mTag">TAG</span>
+    <h2 id="mTitle">Title</h2>
+    <p id="mDesc">desc</p>
+    <div class="shots" id="mShots"></div>
+    <div class="row">
+      <span class="magnetic" id="mMag"><button class="enter-btn" id="mEnter"><span class="lbl" id="mEnterLbl">▶ 열기</span></button></span>
+      <button class="close-btn" id="mClose">닫기 (ESC)</button>
+    </div>
+  </div>
+</div>
+
+<div class="loading" id="loading">LOADING THE BACKROOMS…</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+/* =========================================================================
+   SIA.SYS — THE BACKROOMS · 액자 1개 프로토타입 (VHS)
+   - 액자에 들어갈 게임/스크린샷/상세는 FRAME_GAME 만 고치면 됨.
+   ========================================================================= */
+const FRAME_GAME = {
+  color:'#e3b24a',
+  url:'../../../Project/DeepHero/기획서/homepage/타이틀/index.html', // 옛 타이틀 페이지(백룸 러너)
+  external:false,
+  shots:['assets/shot1.png','assets/shot2.png','assets/shot3.png','assets/shot4.png'],
+  tag:{ ko:'백룸 러너 · 데모', en:'BACKROOMS RUN · DEMO' },
+  name:{ ko:'구독자님, 저기로 갈까요?', en:'SHALL WE GO THERE?' },
+  desc:{ ko:'AI 스트리머 시아와 함께 백룸을 탈출하는 러너. 시청자가 채팅으로 훈수를 두고, 스마일러를 피해 탈출구를 찾는다. 아래는 실제 플레이 스크린샷.',
+        en:'A backrooms-escape runner with AI streamer Sia. Viewers backseat via chat; dodge the Smiler, find the exit. Gameplay screenshots below.' }
+};
+
+const UI = {
+  ko:{ next:'EN', eyebrow:'SIA.SYS // LEVEL 0', title:'THE <b>BACKROOMS</b>',
+       sub:'노란 형광등의 방. 정면의 액자로 걸어가 작품을 확인하세요.',
+       enter:'▸ 클릭하여 입장', pause:'잠시 멈춤', resume:'▸ 클릭하여 계속',
+       legend:'<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 이동 &nbsp;·&nbsp; 마우스 시선 &nbsp;·&nbsp; <kbd>E</kbd> 확인',
+       ctl:'<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 이동 · 마우스 시선 · <kbd>E</kbd> 확인하기 · <kbd>ESC</kbd> 일시정지',
+       sublabel:'// LEVEL 0 — 갤러리', piece:'작품 01', openBtn:'▶ 게임 열기', close:'닫기 (ESC)', inspect:'확인하기' },
+  en:{ next:'KR', eyebrow:'SIA.SYS // LEVEL 0', title:'THE <b>BACKROOMS</b>',
+       sub:'A room under yellow light. Walk to the frame ahead and inspect the piece.',
+       enter:'▸ CLICK TO ENTER', pause:'PAUSED', resume:'▸ CLICK TO RESUME',
+       legend:'<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move &nbsp;·&nbsp; mouse look &nbsp;·&nbsp; <kbd>E</kbd> inspect',
+       ctl:'<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · <kbd>E</kbd> inspect · <kbd>ESC</kbd> pause',
+       sublabel:'// LEVEL 0 — GALLERY', piece:'PIECE 01', openBtn:'▶ OPEN GAME', close:'CLOSE (ESC)', inspect:'inspect' }
+};
+let lang = (localStorage.getItem('sia_br_lang')) || ((navigator.language||'en').toLowerCase().startsWith('ko')?'ko':'en');
+
+const HALF=22, WALL_H=6, R=0.55, EYE=1.65;
+const FRAME_Z=10;                 // 액자 위치(스폰 정면, 가까이)
+const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
+
+const app=document.getElementById('app');
+let renderer, scene, camera, controls, clock, composer, vhsPass;
+const collBoxes=[]; const exhibitMeshes=[]; const visited=new Set();
+let frameScreen=null, shotTex=[], shotIdx=0, shotTimer=0;
+
+function makeTexture(draw, rx=1, ry=1){ const c=document.createElement('canvas'); c.width=c.height=256; draw(c.getContext('2d'),256);
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(rx,ry); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=4; return t; }
+function noise(ctx,s,a){ const img=ctx.getImageData(0,0,s,s),d=img.data; for(let i=0;i<d.length;i+=4){ const n=(Math.random()-.5)*a; d[i]+=n; d[i+1]+=n; d[i+2]+=n; } ctx.putImageData(img,0,0); }
+
+// ── VHS 셰이더 ──
+const VHSShader = {
+  uniforms:{ tDiffuse:{value:null}, time:{value:0} },
+  vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader:`
+    uniform sampler2D tDiffuse; uniform float time; varying vec2 vUv;
+    float rand(vec2 c){ return fract(sin(dot(c,vec2(12.9898,78.233)))*43758.5453); }
+    void main(){
+      vec2 uv = vUv;
+      float line = floor(uv.y*230.0);
+      uv.x += (rand(vec2(line, floor(time*22.0)))-0.5)*0.0015;          // 라인 지터
+      float band = smoothstep(0.46,0.5, abs(fract(uv.y - time*0.10)-0.5)); // 세로 트래킹 밴드
+      uv.x += band*0.004;
+      float ca = 0.0022 + band*0.004;                                    // 색수차
+      float r = texture2D(tDiffuse, vec2(uv.x+ca, uv.y)).r;
+      float g = texture2D(tDiffuse, uv).g;
+      float b = texture2D(tDiffuse, vec2(uv.x-ca, uv.y)).b;
+      vec3 col = vec3(r,g,b);
+      col *= 0.97 + 0.03*sin(uv.y*820.0);                               // 스캔라인(약하게)
+      col += (rand(uv*vec2(time*0.6+1.0, time*0.4+1.0))-0.5)*0.04;       // 노이즈
+      col += band*0.05;                                                  // 밴드 밝힘
+      float v = smoothstep(1.25,0.45, length(uv-0.5));                   // 비네팅
+      col *= mix(0.95,1.0,v);
+      gl_FragColor = vec4(col,1.0);
+    }`
+};
+
+function init(){
+  renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
+  renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.45;
+  app.appendChild(renderer.domElement);
+
+  scene=new THREE.Scene(); scene.background=new THREE.Color(0x2d2110); scene.fog=new THREE.FogExp2(0x2c2010,0.026);
+  clock=new THREE.Clock();
+  camera=new THREE.PerspectiveCamera(72, innerWidth/innerHeight, 0.1, 240);
+  camera.position.set(0, EYE, 17);     // 스폰 (액자 정면)
+
+  buildWorld(); buildFrame(); setupControls();
+
+  composer=new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene,camera));
+  vhsPass=new ShaderPass(VHSShader); composer.addPass(vhsPass);
+  if(composer.setPixelRatio) composer.setPixelRatio(Math.min(devicePixelRatio,2));
+  composer.setSize(innerWidth, innerHeight);
+
+  addEventListener('resize', onResize);
+  animate();
+  document.getElementById('loading').classList.add('hidden');
+  window.__app={ exhibits:exhibitMeshes.length, walls:collBoxes.length, ready:true, shots:shotTex.length };
+}
+
+function buildWorld(){
+  const wallTex=makeTexture((x,s)=>{ x.fillStyle='#ada245'; x.fillRect(0,0,s,s);
+    for(let i=0;i<s;i+=16){ x.fillStyle=(i/16)%2?'rgba(0,0,0,.045)':'rgba(255,255,255,.03)'; x.fillRect(i,0,8,s); }
+    const g=x.createLinearGradient(0,0,0,s); g.addColorStop(0,'rgba(60,45,10,.28)'); g.addColorStop(.5,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(40,28,6,.4)'); x.fillStyle=g; x.fillRect(0,0,s,s); noise(x,s,16); });
+  const floorTex=makeTexture((x,s)=>{ x.fillStyle='#74642f'; x.fillRect(0,0,s,s);
+    for(let i=0;i<2200;i++){ x.fillStyle=`rgba(${30+Math.random()*40|0},${26+Math.random()*34|0},10,.5)`; x.fillRect(Math.random()*s,Math.random()*s,2,1); }
+    const g=x.createRadialGradient(s/2,s/2,10,s/2,s/2,s/1.3); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.3)'); x.fillStyle=g; x.fillRect(0,0,s,s); noise(x,s,18); },14,14);
+  const ceilTex=makeTexture((x,s)=>{ x.fillStyle='#cfc7ad'; x.fillRect(0,0,s,s);
+    x.strokeStyle='rgba(40,34,18,.5)'; x.lineWidth=3; x.strokeRect(2,2,s-4,s-4);
+    for(let i=0;i<600;i++){ x.fillStyle='rgba(110,96,50,.18)'; x.fillRect(Math.random()*s,Math.random()*s,2,2); } noise(x,s,10); },11,11);
+
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(HALF*2,HALF*2), new THREE.MeshStandardMaterial({map:floorTex,roughness:1}));
+  floor.rotation.x=-Math.PI/2; scene.add(floor);
+  const ceil=new THREE.Mesh(new THREE.PlaneGeometry(HALF*2,HALF*2), new THREE.MeshStandardMaterial({map:ceilTex,roughness:1}));
+  ceil.rotation.x=Math.PI/2; ceil.position.y=WALL_H; scene.add(ceil);
+
+  const mkWall=(w)=> new THREE.MeshStandardMaterial({ map:(()=>{ const t=wallTex.clone(); t.needsUpdate=true; t.repeat.set(w/4,WALL_H/4); return t; })(), roughness:1 });
+  [{x:0,z:-HALF,w:HALF*2,ry:0},{x:0,z:HALF,w:HALF*2,ry:0},{x:-HALF,z:0,w:HALF*2,ry:Math.PI/2},{x:HALF,z:0,w:HALF*2,ry:Math.PI/2}].forEach(o=>{
+    const m=new THREE.Mesh(new THREE.BoxGeometry(o.w,WALL_H,.4), mkWall(o.w)); m.position.set(o.x,WALL_H/2,o.z); m.rotation.y=o.ry; scene.add(m); });
+  addColl(0,-HALF,HALF*2,.6); addColl(0,HALF,HALF*2,.6); addColl(-HALF,0,.6,HALF*2); addColl(HALF,0,.6,HALF*2);
+
+  // 조명
+  scene.add(new THREE.HemisphereLight(0xfff1cf,0x52401d,1.3));
+  scene.add(new THREE.AmbientLight(0xffe7b8,1.0));
+  const panelMat=new THREE.MeshStandardMaterial({ color:0xfff6e2, emissive:0xfff1d4, emissiveIntensity:2.0, roughness:.6, toneMapped:false });
+  const grid=[-12,0,12];
+  for(const gx of grid) for(const gz of grid){ const p=new THREE.Mesh(new THREE.PlaneGeometry(3.2,1.1),panelMat); p.rotation.x=Math.PI/2; p.position.set(gx,WALL_H-0.02,gz); scene.add(p);
+    const pl=new THREE.PointLight(0xffe9bf,34,28,2.0); pl.position.set(gx,WALL_H-0.5,gz); scene.add(pl); }
+}
+function addColl(cx,cz,sx,sz){ collBoxes.push({minX:cx-sx/2,maxX:cx+sx/2,minZ:cz-sz/2,maxZ:cz+sz/2}); }
+
+// ── 액자 1개 (정면, 실제 스크린샷 순환) ──
+function buildFrame(){
+  const grp=new THREE.Group();
+  grp.position.set(0, 0, FRAME_Z);   // 스폰(z=17) 정면, 액자 z=10
+  grp.rotation.y = 0;                // 스크린 면이 +Z(플레이어) 쪽을 향함
+
+  const W=5.2, H=3.1;
+  // 외곽 프레임 (옅은 골드/우드)
+  const frame=new THREE.Mesh(new THREE.BoxGeometry(W+0.5,H+0.5,0.22), new THREE.MeshStandardMaterial({color:0x6b5526, roughness:.5, metalness:.45}));
+  frame.position.set(0,2.5,0); grp.add(frame);
+  // 매트(이너 보더)
+  const mat=new THREE.Mesh(new THREE.PlaneGeometry(W+0.16,H+0.16), new THREE.MeshStandardMaterial({color:0x4a3c1e, roughness:.9}));
+  mat.position.set(0,2.5,0.12); grp.add(mat);
+  // 스크린(스크린샷 순환) — 자체발광 unlit 이라 어둠 속에서도 또렷
+  const loader=new THREE.TextureLoader();
+  shotTex = FRAME_GAME.shots.map(src=>{ const t=loader.load(src); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=4; return t; });
+  const screenMat=new THREE.MeshBasicMaterial({ map:shotTex[0], toneMapped:false, side:THREE.DoubleSide });
+  frameScreen=new THREE.Mesh(new THREE.PlaneGeometry(W,H), screenMat);
+  frameScreen.position.set(0,2.5,0.13); frameScreen.userData.project=FRAME_GAME; grp.add(frameScreen);
+  exhibitMeshes.push(frameScreen);
+  // 작품 조명
+  const spot=new THREE.PointLight(new THREE.Color(FRAME_GAME.color),14,12,2.2); spot.position.set(0,3.6,2.4); grp.add(spot);
+  // 바닥 안내선(작은 디테일)
+  scene.add(grp);
+  addColl(0, FRAME_Z, W+0.5, 0.6);
+}
+
+const keys={}; const velocity=new THREE.Vector3(); const direction=new THREE.Vector3();
+let state='start', target=null, walkTouch=false, yaw=0, pitch=0, current=null;
+
+function setupControls(){
+  controls=new PointerLockControls(camera, renderer.domElement); scene.add(camera);
+  if(!isTouch){ controls.addEventListener('lock',()=>{ state='playing'; hideScreens(); });
+    controls.addEventListener('unlock',()=>{ if(state!=='modal'){ state='paused'; show('pauseScreen'); } }); }
+  document.getElementById('startScreen').addEventListener('click', enterPlay);
+  document.getElementById('pauseScreen').addEventListener('click', enterPlay);
+  addEventListener('keydown',e=>{ keys[e.code]=true;
+    if(e.code==='KeyE'&&state==='playing'&&target) openModal(target);
+    if(e.code==='Escape'&&state==='modal') closeModal(); });
+  addEventListener('keyup',e=>{ keys[e.code]=false; });
+  renderer.domElement.addEventListener('click',()=>{ if(state==='playing'&&target) openModal(target); });
+  document.getElementById('mClose').addEventListener('click', closeModal);
+  document.getElementById('modal').addEventListener('click',e=>{ if(e.target.id==='modal') closeModal(); });
+  document.getElementById('mEnter').addEventListener('click',()=>{ const p=current; if(!p) return; if(p.external) window.open(p.url,'_blank'); else location.href=p.url; });
+  setupMagnetic();
+  if(isTouch){
+    document.getElementById('touch').classList.add('on'); yaw=0;
+    const look=renderer.domElement; let lx=0,ly=0,lookId=null;
+    look.addEventListener('touchstart',e=>{ if(state!=='playing')return; const t=e.changedTouches[0]; lookId=t.identifier; lx=t.clientX; ly=t.clientY; },{passive:true});
+    look.addEventListener('touchmove',e=>{ if(state!=='playing')return; for(const t of e.changedTouches){ if(t.identifier===lookId){ yaw-=(t.clientX-lx)*0.005; pitch-=(t.clientY-ly)*0.005; pitch=Math.max(-1.3,Math.min(1.3,pitch)); lx=t.clientX; ly=t.clientY; } } },{passive:true});
+    look.addEventListener('touchend',e=>{ for(const t of e.changedTouches) if(t.identifier===lookId){ lookId=null; if(target) openModal(target); } },{passive:true});
+    const wb=document.getElementById('walkBtn');
+    wb.addEventListener('touchstart',e=>{ e.preventDefault(); walkTouch=true; },{passive:false});
+    wb.addEventListener('touchend',()=>{ walkTouch=false; });
+  }
+}
+function enterPlay(){ startAudio(); if(isTouch){ state='playing'; hideScreens(); } else controls.lock(); }
+function hideScreens(){ document.getElementById('startScreen').classList.add('hidden'); document.getElementById('pauseScreen').classList.add('hidden'); }
+function show(id){ document.getElementById(id).classList.remove('hidden'); }
+
+function blocked(x,z){ for(const b of collBoxes){ if(x>b.minX-R&&x<b.maxX+R&&z>b.minZ-R&&z<b.maxZ+R) return true; } return false; }
+function resolve(nx,nz,px,pz){ nx=Math.max(-HALF+R,Math.min(HALF-R,nx)); nz=Math.max(-HALF+R,Math.min(HALF-R,nz));
+  if(blocked(nx,pz)) nx=px; if(blocked(nx,nz)) nz=pz; return [nx,nz]; }
+
+function openModal(p){
+  current=p; state='modal'; if(!isTouch&&controls.isLocked) controls.unlock();
+  const u=UI[lang];
+  document.getElementById('mIdx').textContent=u.piece;
+  document.getElementById('mTag').textContent=p.tag[lang];
+  document.getElementById('mTitle').textContent=p.name[lang];
+  document.getElementById('mDesc').textContent=p.desc[lang];
+  document.getElementById('mEnterLbl').textContent=u.openBtn;
+  const sc=document.getElementById('mShots'); sc.innerHTML='';
+  p.shots.forEach(s=>{ const im=document.createElement('img'); im.src=s; im.alt='screenshot'; sc.appendChild(im); });
+  document.documentElement.style.setProperty('--c',p.color);
+  document.getElementById('card').style.setProperty('--c',p.color);
+  document.getElementById('mTag').style.setProperty('--c',p.color);
+  document.getElementById('mEnter').style.setProperty('--c',p.color);
+  document.getElementById('modal').classList.add('open');
+  document.getElementById('hint').classList.remove('show');
+  visited.add('frame');
+}
+function closeModal(){ document.getElementById('modal').classList.remove('open'); if(!isTouch){ state='paused'; show('pauseScreen'); } else state='playing'; }
+
+function setupMagnetic(){ const mag=document.getElementById('mMag'), btn=document.getElementById('mEnter'), lbl=document.getElementById('mEnterLbl'); const S=0.4;
+  mag.addEventListener('mousemove',e=>{ const r=btn.getBoundingClientRect(); const dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2);
+    btn.style.transform=`translate(${dx*S}px,${dy*S}px)`; lbl.style.transform=`translate(${dx*S*0.5}px,${dy*S*0.5}px)`; });
+  mag.addEventListener('mouseleave',()=>{ btn.style.transform=''; lbl.style.transform=''; }); }
+
+let AC=null,hum=null, muted=localStorage.getItem('sia_br_muted')!=='0';
+function startAudio(){ if(muted||AC) return; try{ AC=new (AudioContext||webkitAudioContext)();
+  const o=AC.createOscillator(),g=AC.createGain(); o.type='sawtooth'; o.frequency.value=58; const lp=AC.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=180; g.gain.value=0.018;
+  o.connect(lp); lp.connect(g); g.connect(AC.destination); o.start(); hum={o,g}; }catch(e){} }
+document.getElementById('sndBtn').addEventListener('click',()=>{ muted=!muted; localStorage.setItem('sia_br_muted',muted?'1':'0');
+  document.getElementById('sndBtn').textContent=muted?'SOUND':'MUTE'; if(muted&&hum) hum.g.gain.value=0; else if(!muted){ if(!AC) startAudio(); else if(hum) hum.g.gain.value=0.018; } });
+
+function applyLang(){ const u=UI[lang]; document.documentElement.lang=lang;
+  document.getElementById('langBtn').textContent=u.next;
+  document.getElementById('scEyebrow').textContent=u.eyebrow;
+  document.getElementById('scTitle').innerHTML=u.title;
+  document.getElementById('scSub').textContent=u.sub;
+  document.getElementById('scEnter').textContent=u.enter;
+  document.getElementById('scLegend').innerHTML=u.legend;
+  document.getElementById('psTitle').textContent=u.pause;
+  document.getElementById('psEnter').textContent=u.resume;
+  document.getElementById('ctlHint').innerHTML=u.ctl;
+  document.getElementById('sublabel').textContent=u.sublabel;
+  document.getElementById('mClose').textContent=u.close;
+  document.getElementById('hintTag').textContent=u.inspect;
+  document.getElementById('hintName').textContent=FRAME_GAME.name[lang];
+  document.getElementById('sndBtn').textContent=muted?'SOUND':'MUTE';
+}
+document.getElementById('langBtn').addEventListener('click',()=>{ lang=lang==='ko'?'en':'ko'; localStorage.setItem('sia_br_lang',lang); applyLang(); });
+
+const raycaster=new THREE.Raycaster(); const reticle=document.getElementById('reticle'); let bob=0;
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),0.05); const t=performance.now()*0.001;
+
+  // 스크린샷 순환
+  shotTimer+=dt;
+  if(frameScreen && shotTex.length && shotTimer>3){ shotTimer=0; shotIdx=(shotIdx+1)%shotTex.length;
+    frameScreen.material.map=shotTex[shotIdx]; frameScreen.material.needsUpdate=true; }
+
+  if(state==='playing'){
+    velocity.x-=velocity.x*8*dt; velocity.z-=velocity.z*8*dt;
+    let f=0,s=0;
+    if(!isTouch){ f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0); s=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0); } else { f=walkTouch?1:0; }
+    direction.set(s,0,f); if(f||s){ direction.normalize(); velocity.z-=direction.z*70*dt; velocity.x-=direction.x*70*dt; }
+    const px=camera.position.x, pz=camera.position.z;
+    if(isTouch){ camera.rotation.set(pitch,yaw,0,'YXZ'); const sy=Math.sin(yaw),cy=Math.cos(yaw);
+      camera.position.x-=(velocity.x*cy+velocity.z*sy)*dt; camera.position.z-=(velocity.z*cy-velocity.x*sy)*dt; }
+    else { controls.moveRight(-velocity.x*dt); controls.moveForward(-velocity.z*dt); }
+    const [cx,cz]=resolve(camera.position.x,camera.position.z,px,pz); camera.position.x=cx; camera.position.z=cz;
+    const spd=Math.hypot(velocity.x,velocity.z); bob+=spd*dt*0.9; camera.position.y=EYE+Math.sin(bob*2)*Math.min(spd*0.004,0.05);
+
+    raycaster.setFromCamera({x:0,y:0},camera);
+    const hit=raycaster.intersectObjects(exhibitMeshes,false);
+    if(hit.length && hit[0].distance<7){ target=hit[0].object.userData.project; document.getElementById('hint').classList.add('show'); reticle.classList.add('active'); }
+    else { target=null; document.getElementById('hint').classList.remove('show'); reticle.classList.remove('active'); }
+    reticle.classList.add('show');
+  } else { reticle.classList.remove('show'); document.getElementById('hint').classList.remove('show'); }
+
+  if(vhsPass) vhsPass.uniforms.time.value=t;
+  composer.render();
+}
+function onResize(){ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); composer.setSize(innerWidth,innerHeight); }
+
+applyLang();
+try{ init(); }
+catch(err){ console.error(err); document.getElementById('loading').innerHTML='<div class="err">3D 엔진을 불러오지 못했어요.<br>인터넷 연결을 확인하거나 다른 브라우저로 열어보세요.<br><br><span style="font-size:10px;opacity:.6">'+(err&&err.message||err)+'</span></div>'; }
+</script>
+</body>
+</html>

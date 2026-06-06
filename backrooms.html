@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>SIA.SYS — THE BACKROOMS (3D)</title>
+<meta name="description" content="백룸을 1인칭으로 걸어다니며 벽에 걸린 작품을 확인하세요. SIA.SYS 인터랙티브 갤러리." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css" rel="stylesheet">
+<style>
+  :root{ --ink:#f0ead9; --ink-dim:rgba(240,234,217,.6); --ink-faint:rgba(240,234,217,.34);
+    --amber:#e9bf57; --line:rgba(240,234,217,.18); --panel:rgba(18,13,6,.86); }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; overflow:hidden; background:#0b0805; }
+  body{ font-family:'Space Grotesk','Noto Sans KR',sans-serif; color:var(--ink); -webkit-tap-highlight-color:transparent; user-select:none; }
+  #app{ position:fixed; inset:0; }
+  #app canvas{ display:block; filter:url(#vhsCA); }  /* 색수차 유지, 화면 흔들림 제거 */
+
+  /* ── VHS 오버레이 ── */
+  .grain{ position:fixed; inset:0; z-index:30; pointer-events:none; opacity:.16; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:150px 150px; animation:grain .8s steps(1) infinite; }
+  @keyframes grain{ 0%{background-position:0 0}25%{background-position:-20px 8px}50%{background-position:14px -16px}75%{background-position:-10px 18px}100%{background-position:0 0} }
+  .scan{ position:fixed; inset:0; z-index:31; pointer-events:none; mix-blend-mode:multiply; opacity:.74;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 1px, rgba(0,0,0,.19) 2px, rgba(0,0,0,.19) 3px); }
+  .scan::after{ content:''; position:absolute; left:0; right:0; height:130px;
+    background:linear-gradient(rgba(255,255,255,0), rgba(255,255,255,.11), rgba(255,255,255,0)); animation:track 5s linear infinite; }
+  @keyframes track{ 0%{top:-14%} 100%{top:114%} }
+  .roll{ position:fixed; left:0; right:0; height:34px; z-index:31; pointer-events:none; opacity:.66; filter:blur(1px);
+    background:linear-gradient(rgba(255,255,255,0), rgba(255,255,255,.13) 38%, rgba(0,0,0,.24) 62%, rgba(255,255,255,0)); animation:roll 8.5s linear infinite; }
+  @keyframes roll{ 0%{top:-8%} 100%{top:108%} }
+  .vig{ position:fixed; inset:0; z-index:32; pointer-events:none;
+    background:radial-gradient(ellipse at center, transparent 28%, rgba(0,0,0,.45) 60%, rgba(0,0,0,.78) 82%, rgba(0,0,0,.95) 100%); animation:flick 5s steps(2) infinite; }
+  @keyframes flick{ 0%,88%,100%{opacity:1} 89%{opacity:.74} 91%{opacity:.95} 93%{opacity:.68} 95%{opacity:.9} }
+  @media (prefers-reduced-motion:reduce){ .grain,.scan::after,.roll,.vig,#app canvas{ animation:none } }
+
+  /* ── HUD ── */
+  .hud{ position:fixed; inset:0; z-index:20; pointer-events:none; }
+  .hud .tl{ position:absolute; top:22px; left:24px; } .hud .tr{ position:absolute; top:22px; right:24px; display:flex; gap:8px; pointer-events:auto; }
+  .hud .bc{ position:absolute; bottom:20px; left:50%; transform:translateX(-50%); text-align:center; }
+  .brand{ font-weight:600; font-size:15px; letter-spacing:.16em; text-shadow:0 2px 8px rgba(0,0,0,.7); }
+  .brand .dim{ color:var(--ink-faint); font-weight:400; }
+  .sublabel{ margin-top:6px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.22em; color:var(--ink-dim); text-transform:uppercase; text-shadow:0 2px 6px rgba(0,0,0,.7); }
+  .hbtn{ pointer-events:auto; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.18em; text-decoration:none;
+    color:var(--ink-dim); background:rgba(20,16,9,.55); border:1px solid var(--line); padding:8px 11px; border-radius:7px; cursor:pointer; transition:.25s; text-transform:uppercase; }
+  .hbtn:hover{ color:var(--ink); border-color:rgba(240,234,217,.45); background:rgba(30,24,12,.65); }
+  .ctl{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.14em; color:var(--ink-faint); text-shadow:0 2px 6px rgba(0,0,0,.8); }
+  .ctl kbd{ color:var(--ink-dim); border:1px solid var(--line); border-radius:4px; padding:1px 6px; margin:0 1px; }
+
+  .reticle{ position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:22; pointer-events:none; width:20px; height:20px; opacity:0; transition:opacity .4s, width .25s, height .25s; }
+  .reticle.show{ opacity:1; } .reticle::before{ content:''; position:absolute; inset:0; border:1px solid rgba(240,234,217,.5); border-radius:50%; }
+  .reticle::after{ content:''; position:absolute; top:50%; left:50%; width:2px; height:2px; transform:translate(-50%,-50%); background:var(--ink); border-radius:50%; }
+  .reticle.active{ width:32px; height:32px; } .reticle.active::before{ border-color:var(--amber); }
+
+  .hint{ position:fixed; left:50%; bottom:13%; transform:translate(-50%,12px); z-index:23; pointer-events:none; display:flex; align-items:center; gap:12px; padding:11px 18px;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px; opacity:0; transition:opacity .3s, transform .3s; backdrop-filter:blur(6px); }
+  .hint.show{ opacity:1; transform:translate(-50%,0); }
+  .hint .key{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--amber); border:1px solid rgba(233,191,87,.4); border-radius:5px; padding:4px 8px; }
+  .hint .ht{ font-size:14px; } .hint .ht small{ display:block; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.2em; color:var(--ink-faint); text-transform:uppercase; margin-top:2px; }
+
+  .screen{ position:fixed; inset:0; z-index:40; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:32px; cursor:pointer;
+    background:radial-gradient(ellipse at 50% 42%, rgba(40,30,12,.5), rgba(7,5,2,.92) 78%); backdrop-filter:blur(3px); transition:opacity .6s; opacity:1; }
+  .screen.hidden{ opacity:0; pointer-events:none; }
+  .screen .eyebrow{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.42em; color:#caa24e; text-transform:uppercase; margin-bottom:26px; }
+  .screen h1{ font-weight:300; font-size:clamp(34px,8vw,72px); letter-spacing:.04em; line-height:1.05; } .screen h1 b{ font-weight:600; }
+  .screen .sub{ margin-top:18px; font-size:15px; color:var(--ink-dim); font-weight:300; max-width:34ch; line-height:1.7; }
+  .screen .enter{ margin-top:42px; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.3em; text-transform:uppercase; color:var(--ink); border:1px solid var(--line); border-radius:999px; padding:15px 30px; transition:.3s; }
+  .screen:hover .enter{ border-color:rgba(233,191,87,.6); background:rgba(233,191,87,.06); letter-spacing:.36em; }
+  .screen .legend{ margin-top:32px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.12em; color:var(--ink-faint); line-height:2; }
+  .screen .legend kbd{ color:var(--ink-dim); border:1px solid var(--line); border-radius:4px; padding:1px 7px; }
+
+  /* ── 라이트박스 ── */
+  .lb{ position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:24px; background:rgba(5,4,2,.8); backdrop-filter:blur(8px); opacity:0; pointer-events:none; transition:opacity .35s; }
+  .lb.open{ opacity:1; pointer-events:auto; }
+  .lb-card{ width:min(940px,96vw); max-height:92vh; display:flex; flex-direction:column; }
+  .lb-figure{ position:relative; transform:scale(.97); transition:transform .4s cubic-bezier(.2,.8,.2,1); }
+  .lb.open .lb-figure{ transform:none; }
+  .lb-img{ display:block; width:100%; max-height:62vh; object-fit:contain; background:#0c0905; border:1px solid var(--line); border-radius:10px; box-shadow:0 30px 80px rgba(0,0,0,.6); }
+  .lb-bar{ display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-top:18px; flex-wrap:wrap; }
+  .lb-idx{ font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.3em; color:var(--ink-faint); text-transform:uppercase; }
+  .lb-tag{ display:inline-block; margin-top:10px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.18em; color:var(--amber); border:1px solid rgba(233,191,87,.45); border-radius:999px; padding:5px 12px; text-transform:uppercase; }
+  .lb-title{ margin-top:12px; font-weight:500; font-size:clamp(22px,4.5vw,30px); }
+  .lb-desc{ margin-top:10px; font-family:'Noto Sans KR',sans-serif; font-weight:300; font-size:14px; line-height:1.8; color:var(--ink-dim); max-width:60ch; }
+  .magnetic{ position:relative; }
+  .open-btn{ display:inline-flex; align-items:center; gap:9px; cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:13px; letter-spacing:.2em; text-transform:uppercase; color:#15100a; background:var(--amber); border:none; border-radius:999px; padding:14px 24px; transition:transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s; will-change:transform; box-shadow:0 8px 30px rgba(233,191,87,.3); white-space:nowrap; }
+  .open-btn .lbl{ display:inline-block; transition:transform .25s cubic-bezier(.2,.8,.2,1); }
+  .lb-nav{ position:absolute; top:50%; transform:translateY(-50%); font-size:30px; color:var(--ink-dim); cursor:pointer; padding:14px; user-select:none; transition:color .2s; }
+  .lb-nav:hover{ color:var(--ink); } .lb-prev{ left:-6px; } .lb-next{ right:-6px; }
+  .lb-close{ position:absolute; top:-2px; right:-2px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.18em; color:var(--ink-faint); cursor:pointer; text-transform:uppercase; }
+  .lb-close:hover{ color:var(--amber); }
+
+  .loading{ position:fixed; inset:0; z-index:70; display:flex; align-items:center; justify-content:center; background:#0b0805; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.3em; color:var(--ink-faint); text-transform:uppercase; transition:opacity .6s; }
+  .loading.hidden{ opacity:0; pointer-events:none; }
+  .err{ max-width:520px; text-align:center; line-height:1.9; color:var(--ink-dim); padding:20px; }
+
+  /* ── 픽셀 네온 타이포 (index.html 톤) ── */
+  :root{ --neon:#ffd84a; --amber:#ffd84a; }
+  @keyframes flickerLight{ 0%,88%,92%,95%,97%,100%{opacity:1} 89%{opacity:.32} 93%{opacity:.7} 96%{opacity:.5} }
+  .brand{ font-family:'Press Start 2P','Galmuri11',monospace; font-size:12px; color:var(--neon); letter-spacing:1px;
+    text-shadow:0 0 10px rgba(255,216,74,.8), 0 0 26px rgba(255,216,74,.35); }
+  .brand .dim{ color:rgba(255,216,74,.5); }
+  .sublabel{ font-family:'VT323',monospace; font-size:16px; color:rgba(255,216,74,.72); letter-spacing:.16em; }
+  .hbtn{ font-family:'Press Start 2P','Galmuri11',monospace; font-size:8px; color:var(--neon); border-color:rgba(255,216,74,.4); }
+  .hbtn:hover{ color:#fff; border-color:var(--neon); background:rgba(255,216,74,.12); }
+  .ctl{ font-family:'VT323',monospace; font-size:15px; color:rgba(255,216,74,.45); }
+  .ctl kbd{ font-family:'Press Start 2P',monospace; font-size:9px; color:var(--neon); border-color:rgba(255,216,74,.4); }
+  .screen .eyebrow{ font-family:'Press Start 2P','Galmuri11',monospace; color:var(--neon); text-shadow:0 0 10px rgba(255,216,74,.7); }
+  .screen h1{ font-family:'Press Start 2P','Galmuri11',monospace; font-weight:400; color:var(--neon);
+    font-size:clamp(20px,5.4vw,46px); letter-spacing:3px; line-height:1.35;
+    text-shadow:0 0 12px rgba(255,216,74,.9), 0 0 34px rgba(255,216,74,.5), 0 0 70px rgba(255,216,74,.22);
+    animation:flickerLight 7s ease-in-out infinite; }
+  .screen h1 b{ font-weight:400; color:#fff; text-shadow:0 0 12px rgba(255,255,255,.7), 0 0 34px rgba(255,216,74,.5); }
+  .screen .enter{ font-family:'Press Start 2P','Galmuri11',monospace; font-size:10px; color:var(--neon); border-color:rgba(255,216,74,.4); }
+  .screen:hover .enter{ border-color:var(--neon); background:rgba(255,216,74,.08); }
+  .screen .legend{ font-family:'VT323',monospace; font-size:14px; }
+  .screen .legend kbd{ font-family:'Press Start 2P',monospace; font-size:8px; color:var(--neon); border-color:rgba(255,216,74,.4); }
+  .hint{ border-color:rgba(255,216,74,.3); }
+  .hint .key{ font-family:'Press Start 2P',monospace; color:var(--neon); border-color:rgba(255,216,74,.5); }
+  .hint .ht{ font-family:'Galmuri11','Noto Sans KR',sans-serif; font-size:15px; }
+  .hint .ht small{ font-family:'VT323',monospace; }
+  .lb-tag{ color:var(--neon); border-color:rgba(255,216,74,.5); }
+  .lb-title{ font-family:'Press Start 2P','Galmuri11',monospace; font-weight:400; font-size:clamp(14px,2.6vw,20px);
+    color:var(--neon); line-height:1.6; text-shadow:0 0 14px rgba(255,216,74,.5); }
+  .lb-idx{ font-family:'Press Start 2P',monospace; font-size:9px; }
+  .open-btn{ font-family:'Press Start 2P','Galmuri11',monospace; font-size:11px; background:var(--neon); color:#1a1206;
+    box-shadow:0 8px 30px rgba(255,216,74,.35); }
+  .reticle.active::before{ border-color:var(--neon); box-shadow:0 0 8px rgba(255,216,74,.5); }
+
+  /* ── 개발자 연락처 모달 ── */
+  .contact{ position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:24px;
+    background:rgba(4,6,10,.82); backdrop-filter:blur(9px); opacity:0; pointer-events:none; transition:opacity .35s; }
+  .contact.open{ opacity:1; pointer-events:auto; }
+  .contact-card{ position:relative; width:min(520px,95vw);
+    background:linear-gradient(180deg, rgba(13,18,26,.97), rgba(7,9,13,.98)); border:1px solid rgba(95,214,255,.32); border-radius:16px;
+    padding:32px 30px 28px; box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 44px rgba(95,214,255,.14);
+    transform:translateY(14px) scale(.98); transition:transform .4s cubic-bezier(.2,.8,.2,1); }
+  .contact.open .contact-card{ transform:none; }
+  .c-close{ position:absolute; top:14px; right:16px; font-family:'Press Start 2P',monospace; font-size:9px; color:rgba(223,244,255,.5); cursor:pointer; }
+  .c-close:hover{ color:#5fd6ff; }
+  .c-title{ font-family:'Press Start 2P','Galmuri11',monospace; font-size:18px; color:#5fd6ff; text-shadow:0 0 14px rgba(95,214,255,.5); }
+  .c-sub{ font-family:'VT323',monospace; font-size:17px; color:rgba(223,244,255,.55); letter-spacing:.2em; margin:6px 0 20px; }
+  .c-list{ display:flex; flex-direction:column; gap:10px; }
+  .c-link{ display:flex; align-items:center; gap:14px; padding:13px 16px; background:rgba(95,214,255,.06); border:1px solid rgba(95,214,255,.2); border-radius:10px; color:#eaf6ff; text-decoration:none; transition:background .2s,border-color .2s,transform .2s; }
+  .c-link:hover{ background:rgba(95,214,255,.13); border-color:#5fd6ff; transform:translateX(6px); }
+  .c-link svg{ width:22px; height:22px; flex-shrink:0; }
+  .c-name{ font-weight:600; font-size:14px; display:block; }
+  .c-handle{ font-family:'VT323',monospace; font-size:15px; color:#5fd6ff; display:block; margin-top:1px; }
+  /* 프로젝트 모달 = 핑크 */
+  .projects-modal .contact-card{ border-color:rgba(255,93,177,.32); box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 44px rgba(255,93,177,.14); }
+  .projects-modal .c-title{ color:#ff5db1; text-shadow:0 0 14px rgba(255,93,177,.5); }
+  .projects-modal .c-link{ background:rgba(255,93,177,.06); border-color:rgba(255,93,177,.2); }
+  .projects-modal .c-link:hover{ background:rgba(255,93,177,.13); border-color:#ff5db1; }
+  .projects-modal .c-handle{ color:#ff8fce; }
+
+  /* ── 모바일 터치 UI ── */
+  .touchui{ display:none; }
+  .touchui.on{ display:block; }
+  .mjoy{ position:fixed; left:24px; bottom:26px; width:130px; height:130px; border-radius:50%; z-index:24; touch-action:none;
+    border:1px solid rgba(255,216,74,.35); background:rgba(20,16,9,.35); }
+  .mknob{ position:absolute; left:50%; top:50%; width:56px; height:56px; margin:-28px 0 0 -28px; border-radius:50%;
+    background:rgba(255,216,74,.22); border:1px solid rgba(255,216,74,.55); box-shadow:0 0 16px rgba(255,216,74,.25); }
+  .mE{ position:fixed; right:30px; bottom:48px; width:82px; height:82px; border-radius:50%; z-index:24; touch-action:none;
+    display:flex; align-items:center; justify-content:center; font-family:'Press Start 2P',monospace; font-size:16px; color:var(--neon);
+    border:1px solid rgba(255,216,74,.5); background:rgba(255,216,74,.12); box-shadow:0 0 16px rgba(255,216,74,.2); }
+  .mE:active{ background:rgba(255,216,74,.25); }
+  .mhint{ position:fixed; bottom:8px; left:50%; transform:translateX(-50%); z-index:24; pointer-events:none;
+    font-family:'VT323',monospace; font-size:13px; letter-spacing:.1em; color:rgba(255,216,74,.45); white-space:nowrap; }
+</style>
+</head>
+<body>
+
+<!-- VHS 색수차 필터 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="vhsCA" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB">
+    <!-- 색수차(RGB 분리) -->
+    <feColorMatrix type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>
+    <feOffset in="r" dx="3.6" dy="0" result="ro"/>
+    <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="g"/>
+    <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="b"/>
+    <feOffset in="b" dx="-3.6" dy="0" result="bo"/>
+    <feBlend in="ro" in2="g" mode="screen" result="rg"/>
+    <feBlend in="rg" in2="bo" mode="screen" result="ca"/>
+    <!-- 블룸: 밝은 부분 추출 → 블러 → screen 합성 (글자가 빛나는 느낌) -->
+    <feComponentTransfer in="ca" result="bright">
+      <feFuncR type="gamma" amplitude="1.5" exponent="3.4" offset="0"/>
+      <feFuncG type="gamma" amplitude="1.5" exponent="3.4" offset="0"/>
+      <feFuncB type="gamma" amplitude="1.5" exponent="3.4" offset="0"/>
+    </feComponentTransfer>
+    <feGaussianBlur in="bright" stdDeviation="9" result="bloomWide"/>
+    <feGaussianBlur in="bright" stdDeviation="3" result="bloomTight"/>
+    <feBlend in="ca" in2="bloomWide" mode="screen" result="s1"/>
+    <feBlend in="s1" in2="bloomTight" mode="screen"/>
+  </filter>
+</svg>
+
+<div id="app"></div>
+
+<div class="grain"></div>
+<div class="scan"></div>
+<div class="roll"></div>
+<div class="vig"></div>
+
+<div class="hud">
+  <div class="tl"><div class="brand">SIA<span class="dim">.SYS</span></div><div class="sublabel" id="sublabel">// LEVEL 0 — 갤러리</div></div>
+  <div class="tr"><a class="hbtn" href="index.html" id="hubBtn">← HUB</a><button class="hbtn" id="langBtn">EN</button></div>
+  <div class="bc"><div class="ctl" id="ctl"></div></div>
+</div>
+
+<div class="reticle" id="reticle"></div>
+
+<!-- 모바일 터치 조작 -->
+<div class="touchui" id="touchui">
+  <div class="mjoy" id="mjoy"><div class="mknob" id="mknob"></div></div>
+  <div class="mE" id="mE">E</div>
+  <div class="mhint">왼쪽 = 이동 · 드래그 = 시선 · E = 확인</div>
+</div>
+<div class="hint" id="hint"><span class="key">E</span><span class="ht"><span id="hintName">—</span><small id="hintTag">inspect</small></span></div>
+
+<div class="screen" id="startScreen">
+  <div class="eyebrow" id="scEyebrow">SIA.SYS // LEVEL 0</div>
+  <h1 id="scTitle">THE <b>BACKROOMS</b></h1>
+  <div class="sub" id="scSub">노란 형광등의 방. 걸어다니며 벽에 걸린 작품을 확인하세요.</div>
+  <div class="enter" id="scEnter">▸ 클릭하여 입장</div>
+  <div class="legend" id="scLegend"></div>
+</div>
+<div class="lb" id="lb">
+  <div class="lb-card"><div class="lb-figure">
+    <img class="lb-img" id="lbImg" src="" alt="">
+    <span class="lb-nav lb-prev" id="lbPrev">‹</span><span class="lb-nav lb-next" id="lbNext">›</span><span class="lb-close" id="lbClose">✕ ESC</span>
+  </div>
+  <div class="lb-bar">
+    <div class="lb-meta"><div class="lb-idx" id="lbIdx">01 / 05</div><span class="lb-tag" id="lbTag">TAG</span><div class="lb-title" id="lbTitle">Title</div><div class="lb-desc" id="lbDesc">desc</div></div>
+    <div class="lb-actions"><span class="magnetic" id="mag"><button class="open-btn" id="openBtn"><span class="lbl" id="openLbl">▶ 게임 열기</span></button></span></div>
+  </div></div>
+</div>
+
+<!-- 개발자 연락처 모달 -->
+<div class="contact" id="contact">
+  <div class="contact-card">
+    <div class="c-close" id="cClose">✕ ESC</div>
+    <div class="c-title">DEV · 개발자</div>
+    <div class="c-sub">AKAROLLS</div>
+    <nav class="c-list">
+      <a class="c-link" href="https://www.youtube.com/@akarolls" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="#5fd6ff"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .5 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1c.4-1.6.5-3.2.5-4.8s-.1-3.2-.5-4.8zM9.7 15.5V8.5l6.2 3.5z"/></svg>
+        <span><span class="c-name">YouTube</span><span class="c-handle">@akarolls</span></span></a>
+      <a class="c-link" href="https://www.instagram.com/akarolls.dev/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#5fd6ff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="#5fd6ff" stroke="none"/></svg>
+        <span><span class="c-name">Instagram</span><span class="c-handle">@akarolls.dev</span></span></a>
+      <a class="c-link" href="https://discord.gg/fvQKn7Czx9" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="#5fd6ff"><path d="M20.3 4.4A19.6 19.6 0 0 0 15.4 3c-.2.4-.5.9-.7 1.3a18 18 0 0 0-5.4 0C9.1 3.9 8.8 3.4 8.6 3A19.7 19.7 0 0 0 3.7 4.4C.5 9.2-.3 13.8.1 18.4a19.7 19.7 0 0 0 6 3c.5-.7.9-1.4 1.3-2.2-.7-.3-1.4-.6-2-1 .2-.1.3-.3.5-.4a14 14 0 0 0 12.2 0l.5.4c-.7.4-1.3.7-2 1 .4.8.8 1.5 1.3 2.2a19.6 19.6 0 0 0 6-3c.5-5.2-.9-9.8-3.7-14zM8 15.5c-1.2 0-2.2-1.1-2.2-2.5s1-2.5 2.2-2.5 2.2 1.1 2.2 2.5-1 2.5-2.2 2.5zm8 0c-1.2 0-2.2-1.1-2.2-2.5s1-2.5 2.2-2.5 2.2 1.1 2.2 2.5-1 2.5-2.2 2.5z"/></svg>
+        <span><span class="c-name">Discord</span><span class="c-handle">초대 링크</span></span></a>
+      <a class="c-link" href="mailto:akarollsdev@gmail.com">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#5fd6ff" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7" stroke-linejoin="round"/></svg>
+        <span><span class="c-name">Mail</span><span class="c-handle">akarollsdev@gmail.com</span></span></a>
+    </nav>
+  </div>
+</div>
+
+<!-- 프로젝트(배포 사이트) 모달 -->
+<div class="contact projects-modal" id="projects">
+  <div class="contact-card">
+    <div class="c-close" id="pClose">✕ ESC</div>
+    <div class="c-title">PROJECTS</div>
+    <div class="c-sub">플레이 · PLAY</div>
+    <nav class="c-list">
+      <a class="c-link" href="https://sia-tarot.akarollsdev.workers.dev/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ff5db1" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 7v6M9 10h6" stroke-linecap="round"/></svg>
+        <span><span class="c-name">SIA TAROT</span><span class="c-handle">매일 타로 카드 · sia-tarot…workers.dev</span></span></a>
+      <a class="c-link" href="https://sia-backroom-dash.pages.dev/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="#ff5db1"><path d="M8 5v14l11-7z"/></svg>
+        <span><span class="c-name">BACKROOM DASH</span><span class="c-handle">2D 백룸 러너 · sia-backroom-dash.pages.dev</span></span></a>
+    </nav>
+  </div>
+</div>
+
+<div class="loading" id="loading">LOADING THE BACKROOMS…</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="tex-data.js"></script>
+<script src="tarot-data.js"></script>
+<script>
+/* =========================================================================
+   SIA.SYS — THE BACKROOMS 3D · 워킹 + 액자 갤러리
+   - Three.js 전역 빌드(vendor/three.min.js) → file:// 에서도 동작
+   - 작품/사진은 GAME / FRAMES 만 고치면 됨.
+   ========================================================================= */
+if(!window.THREE){ document.getElementById('loading').innerHTML='<div class="err">3D 엔진(vendor/three.min.js)을 찾지 못했어요.<br>vendor 폴더가 backrooms.html 옆에 있는지 확인하세요.</div>'; }
+
+const GAME = {
+  url:'../../../Project/DeepHero/기획서/homepage/타이틀/index.html',
+  external:false,
+  tag:{ ko:'백룸 러너 · 데모', en:'BACKROOMS RUN · DEMO' },
+  name:{ ko:'구독자님, 저기로 갈까요?', en:'SHALL WE GO THERE?' },
+  desc:{ ko:'AI 스트리머 시아와 함께 백룸을 탈출하는 러너. 시청자가 채팅으로 훈수를 두고, 스마일러를 피해 탈출구를 찾는다.',
+        en:'A backrooms-escape runner with AI streamer Sia. Viewers backseat via chat; dodge the Smiler, find the exit.' }
+};
+const HALF=18, WALL_H=6, R=0.6, EYE=1.65;
+const PHWZ=-2;   // 사진 칸막이 z (스폰 정면)
+// 겹쳐 붙인 사진들. dx/dy=벽면 오프셋, rz=기울기(도), dz=깊이(겹침 순서), w=가로, asp=세로/가로
+const PHOTOS = [
+  { key:'shot1', t:{ko:'플레이 #1',en:'GAMEPLAY #1'}, dx:-0.3, dy: 0.1, rz: 1,  dz:0.24, w:3.0, asp:0.62 },
+  { key:'shot2', t:{ko:'플레이 #2',en:'GAMEPLAY #2'}, dx: 1.9, dy: 0.7, rz: 6,  dz:0.10, w:2.3, asp:0.62 },
+  { key:'shot3', t:{ko:'플레이 #3',en:'GAMEPLAY #3'}, dx:-2.1, dy: 0.6, rz:-7,  dz:0.06, w:2.4, asp:0.62 },
+  { key:'shot4', t:{ko:'플레이 #4',en:'GAMEPLAY #4'}, dx:-1.0, dy:-1.4, rz: 4,  dz:0.16, w:2.2, asp:0.62 },
+  { key:'sia',   t:{ko:'시아 · 캐릭터',en:'SIA · CHARACTER'}, dx: 1.8, dy:-1.0, rz:-5, dz:0.20, w:1.5, asp:1.32 },
+];
+// data URI 내장(TEX) 우선 → file:// 에서도 WebGL 텍스처 OK. 없으면 PNG 폴백.
+const srcOf = f => (window.TEX && TEX[f.key]) ? TEX[f.key] : ('assets/'+f.key+'.png');
+const UI = {
+  ko:{ next:'EN', sublabel:'// LEVEL 0 — 갤러리', open:'▶ 게임 열기', hub:'← 허브', inspect:'확인하기',
+       eyebrow:'SIA.SYS // LEVEL 0', title:'THE <b>BACKROOMS</b>', sub:'노란 형광등의 방. 걸어다니며 벽에 걸린 작품을 확인하세요.',
+       enter:'▸ 클릭하여 입장', pause:'잠시 멈춤', resume:'▸ 클릭하여 계속',
+       legend:'<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 이동 &nbsp;·&nbsp; 마우스 시선 &nbsp;·&nbsp; <kbd>E</kbd> 확인',
+       ctl:'<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 이동 · 마우스 시선 · <kbd>E</kbd> 확인하기 · <kbd>ESC</kbd> 멈춤' },
+  en:{ next:'KR', sublabel:'// LEVEL 0 — GALLERY', open:'▶ OPEN GAME', hub:'← HUB', inspect:'inspect',
+       eyebrow:'SIA.SYS // LEVEL 0', title:'THE <b>BACKROOMS</b>', sub:'A room under yellow light. Walk and inspect the pieces on the walls.',
+       enter:'▸ CLICK TO ENTER', pause:'PAUSED', resume:'▸ CLICK TO RESUME',
+       legend:'<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move &nbsp;·&nbsp; mouse look &nbsp;·&nbsp; <kbd>E</kbd> inspect',
+       ctl:'<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look · <kbd>E</kbd> inspect · <kbd>ESC</kbd> pause' }
+};
+let lang = localStorage.getItem('sia_b3_lang') || ((navigator.language||'en').toLowerCase().startsWith('ko')?'ko':'en');
+
+let renderer, scene, camera, clock, raycaster;
+const collBoxes=[]; const frameMeshes=[]; const flickers=[];
+let state='start', target=null, targetIdx=-1, cur=0, currentKind=null;
+let yaw=0, pitch=0, locked=false;
+const keys={};
+const isTouch = matchMedia('(pointer:coarse)').matches || ('ontouchstart' in window);
+let tMoveX=0, tMoveZ=0;
+
+function makeTex(draw, rx=1, ry=1){ const c=document.createElement('canvas'); c.width=c.height=256; draw(c.getContext('2d'),256);
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(rx,ry); t.encoding=THREE.sRGBEncoding; t.anisotropy=4; return t; }
+function noise(ctx,s,a){ const im=ctx.getImageData(0,0,s,s),d=im.data; for(let i=0;i<d.length;i+=4){ const n=(Math.random()-.5)*a; d[i]+=n; d[i+1]+=n; d[i+2]+=n; } ctx.putImageData(im,0,0); }
+
+function init(){
+  renderer=new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
+  renderer.setSize(innerWidth,innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
+  renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.0;
+  document.getElementById('app').appendChild(renderer.domElement);
+
+  scene=new THREE.Scene(); scene.background=new THREE.Color(0x1d150a); scene.fog=new THREE.FogExp2(0x1b1409,0.042);
+  clock=new THREE.Clock(); raycaster=new THREE.Raycaster();
+  camera=new THREE.PerspectiveCamera(72, innerWidth/innerHeight, 0.1, 200);
+  camera.position.set(0, EYE, 8);
+
+  buildRoom(); buildGuide(); buildPhotos(); buildSocial(); buildTarot(); buildDash(); setupInput();
+  addEventListener('resize', onResize);
+  document.getElementById('loading').classList.add('hidden');
+  animate();
+  window.__b3={ frames:frameMeshes.length, walls:collBoxes.length, ready:true };
+}
+
+let wallTex; let guideMat=null;
+function wallMat(len){ const t=wallTex.clone(); t.needsUpdate=true; t.repeat.set(Math.max(len,1)/4, WALL_H/4); return new THREE.MeshStandardMaterial({map:t, roughness:1}); }
+function wallSeg(x1,z1,x2,z2,th){ th=th||0.5; const cx=(x1+x2)/2, cz=(z1+z2)/2, len=Math.hypot(x2-x1,z2-z1);
+  const horiz=Math.abs(x2-x1)>=Math.abs(z2-z1); const sx=horiz?len+th:th, sz=horiz?th:len+th;
+  const m=new THREE.Mesh(new THREE.BoxGeometry(sx,WALL_H,sz), wallMat(Math.max(sx,sz))); m.position.set(cx,WALL_H/2,cz); scene.add(m); addColl(cx,cz,sx,sz); }
+function pillar(x,z){ const m=new THREE.Mesh(new THREE.BoxGeometry(1.4,WALL_H,1.4), wallMat(1.4)); m.position.set(x,WALL_H/2,z); scene.add(m); addColl(x,z,1.4,1.4); }
+function buildRoom(){
+  wallTex=makeTex((x,s)=>{ x.fillStyle='#b3a24c'; x.fillRect(0,0,s,s);
+    for(let i=0;i<s;i+=16){ x.fillStyle=(i/16)%2?'rgba(0,0,0,.045)':'rgba(255,255,255,.03)'; x.fillRect(i,0,8,s); }
+    const g=x.createLinearGradient(0,0,0,s); g.addColorStop(0,'rgba(60,45,10,.25)'); g.addColorStop(.5,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(40,28,6,.36)'); x.fillStyle=g; x.fillRect(0,0,s,s); noise(x,s,16); });
+  const floorTex=makeTex((x,s)=>{ x.fillStyle='#74642f'; x.fillRect(0,0,s,s);
+    for(let i=0;i<2000;i++){ x.fillStyle=`rgba(${30+Math.random()*40|0},${26+Math.random()*34|0},10,.5)`; x.fillRect(Math.random()*s,Math.random()*s,2,1); }
+    const g=x.createRadialGradient(s/2,s/2,10,s/2,s/2,s/1.3); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.28)'); x.fillStyle=g; x.fillRect(0,0,s,s); noise(x,s,16); }, 10,10);
+  const ceilTex=makeTex((x,s)=>{ x.fillStyle='#d3cbad'; x.fillRect(0,0,s,s); x.strokeStyle='rgba(40,34,18,.5)'; x.lineWidth=3; x.strokeRect(2,2,s-4,s-4);
+    for(let i=0;i<500;i++){ x.fillStyle='rgba(110,96,50,.16)'; x.fillRect(Math.random()*s,Math.random()*s,2,2); } noise(x,s,10); }, 8,8);
+
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(HALF*2,HALF*2), new THREE.MeshStandardMaterial({map:floorTex,roughness:1}));
+  floor.rotation.x=-Math.PI/2; scene.add(floor);
+  const ceil=new THREE.Mesh(new THREE.PlaneGeometry(HALF*2,HALF*2), new THREE.MeshStandardMaterial({map:ceilTex,roughness:1}));
+  ceil.rotation.x=Math.PI/2; ceil.position.y=WALL_H; scene.add(ceil);
+
+  // 외벽
+  wallSeg(-HALF,-HALF, HALF,-HALF); wallSeg(-HALF,HALF, HALF,HALF);
+  wallSeg(-HALF,-HALF, -HALF,HALF); wallSeg(HALF,-HALF, HALF,HALF);
+  // 정면 칸막이 (스폰에서 바로 보임) — 여기에 '조작 가이드'
+  wallSeg(-5,PHWZ, 5,PHWZ);
+  // 좌우 사이드 복도벽 (가운데로 들어가다 옆으로 돌게)
+  wallSeg(-9,PHWZ, -9,11);
+  // 오른쪽 벽은 문(z 3~7)을 내서 뒤 알코브로 들어가게
+  wallSeg(9,PHWZ, 9,3); wallSeg(9,7, 9,11);
+  // 북쪽 사진방으로 좁아지는 진입 벽(복도 느낌)
+  wallSeg(-9,-9, -4,-9); wallSeg(9,-9, 4,-9);
+  // 스폰 뒤 벽 (길 막음) — 여기에 '개발자 연락처'
+  wallSeg(-HALF,12, HALF,12);
+  // 기둥(리미널)
+  [[-13,-8],[13,-8],[-13,5],[13,5],[0,-12]].forEach(p=>pillar(p[0],p[1]));
+
+  // 조명 (r0.149 레거시)
+  scene.add(new THREE.HemisphereLight(0xfff1cf,0x261f10,0.38));
+  scene.add(new THREE.AmbientLight(0xffe7b8,0.26));
+  const panelOn=new THREE.MeshBasicMaterial({ color:0xffffff, toneMapped:false }); // 켜진 형광등(블룸)
+  const grid=[-12,0,12];
+  const OFF=new Set(['-12,0','12,0','0,12','12,-12']);  // 꺼진 등 → 어두운 구간
+  const FLICK=new Set(['0,-12','-12,12']);              // 깜빡이는(죽어가는) 등
+  for(const gx of grid) for(const gz of grid){
+    const key=gx+','+gz, off=OFF.has(key), flick=FLICK.has(key);
+    const mat = off ? new THREE.MeshStandardMaterial({color:0x352f24, roughness:.7})
+                    : (flick ? new THREE.MeshBasicMaterial({color:0xffffff, toneMapped:false}) : panelOn);
+    const p=new THREE.Mesh(new THREE.PlaneGeometry(3.0,1.0), mat); p.rotation.x=Math.PI/2; p.position.set(gx,WALL_H-0.02,gz); scene.add(p);
+    if(!off){ const pl=new THREE.PointLight(0xffe9bf, 1.0, 26, 1.6); pl.position.set(gx,WALL_H-0.6,gz); scene.add(pl);
+      if(flick) flickers.push({pl, panel:p, base:1.0}); }
+  }
+}
+function addColl(cx,cz,sx,sz){ collBoxes.push({minX:cx-sx/2,maxX:cx+sx/2,minZ:cz-sz/2,maxZ:cz+sz/2}); }
+
+function buildSocial(){
+  // 스폰 뒤 벽(z=12) 안쪽 면 — 개발자 연락처
+  const cw=1024, ch=720; const c=document.createElement('canvas'); c.width=cw; c.height=ch; const x=c.getContext('2d');
+  const tex=new THREE.CanvasTexture(c); tex.encoding=THREE.sRGBEncoding; tex.anisotropy=4;
+  const PX='"Press Start 2P",monospace', KR='"Galmuri11","Noto Sans KR",sans-serif';
+  function draw(){
+    x.clearRect(0,0,cw,ch); x.fillStyle='rgba(8,12,20,0.66)'; x.fillRect(40,40,cw-80,ch-80);
+    x.textBaseline='top'; x.shadowColor='rgba(80,210,255,0.95)';
+    x.fillStyle='#5fd6ff'; x.shadowBlur=26; x.font='48px '+PX; x.fillText('CONTACT', 80, 58);
+    x.shadowBlur=14; x.fillStyle='#dff4ff'; x.font='36px '+KR; x.fillText('개발자 · AKAROLLS', 84, 140);
+    const pairs=[['YOUTUBE','@akarolls'],['INSTAGRAM','@akarolls.dev'],['DISCORD','/invite'],['MAIL','akarollsdev']];
+    let yy=234;
+    pairs.forEach(p=>{ x.shadowBlur=18; x.fillStyle='#9fe6ff'; x.font='24px '+PX; x.fillText(p[0], 84, yy);
+      x.shadowBlur=10; x.fillStyle='#cfeeff'; x.font='24px '+PX; x.fillText(p[1], 470, yy); yy+=80; });
+    x.shadowBlur=12; x.fillStyle='rgba(95,214,255,0.78)'; x.font='26px '+KR; x.fillText('읽으면 페이지가 뜬다  [ E ]', 84, yy+12);
+    x.shadowBlur=0; tex.needsUpdate=true;
+  }
+  draw(); if(document.fonts){ try{ document.fonts.ready.then(draw); }catch(e){} }
+  const W=4.4, H=W*(ch/cw);
+  const grp=new THREE.Group(); grp.position.set(0, 2.7, 12-0.4); grp.rotation.y=Math.PI; scene.add(grp);
+  grp.add(new THREE.Mesh(new THREE.PlaneGeometry(W+0.2,H+0.18), new THREE.MeshBasicMaterial({color:0x0a1018, transparent:true, opacity:0.7, toneMapped:false})));
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(W,H), new THREE.MeshBasicMaterial({map:tex, transparent:true, toneMapped:false}));
+  sign.position.z=0.012; sign.userData.kind='social'; grp.add(sign); frameMeshes.push(sign);
+  const gl=new THREE.PointLight(0x66c8ff,0.8,9,1.6); gl.position.set(0,2.8,12-2.4); scene.add(gl);
+}
+function buildGuide(){
+  // 정면 칸막이 벽 = CRT 단말기 (LEVEL 0 readout) — 조작법 튜토리얼
+  const cw=1024, ch=768;
+  const c=document.createElement('canvas'); c.width=cw; c.height=ch; const x=c.getContext('2d');
+  const tex=new THREE.CanvasTexture(c); tex.encoding=THREE.sRGBEncoding; tex.anisotropy=4;
+  const PX='"Press Start 2P",monospace';
+  const MONO='"JetBrains Mono","Courier New",monospace';
+  function draw(){
+    // 화면 베이스 + 비네팅
+    x.fillStyle='#0a0f0c'; x.fillRect(0,0,cw,ch);
+    const vg=x.createRadialGradient(cw/2,ch/2,140,cw/2,ch/2,cw*0.72); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.6)'); x.fillStyle=vg; x.fillRect(0,0,cw,ch);
+    x.textBaseline='top';
+    const teal='#7be3b2', tdim='#4f9e7e', white='#e9f5ec', red='#ff5a48';
+    x.shadowColor='rgba(110,230,170,0.55)';
+    // 헤더
+    x.shadowBlur=16; x.fillStyle=white; x.font='56px '+PX; x.fillText('LEVEL 0', 70, 54);
+    x.shadowBlur=0; x.strokeStyle='rgba(123,227,178,0.5)'; x.lineWidth=2; x.setLineDash([10,8]);
+    x.beginPath(); x.moveTo(72,142); x.lineTo(cw-92,142); x.stroke(); x.setLineDash([]);
+    x.shadowBlur=8; x.fillStyle=teal; x.font='34px '+MONO; x.fillText('ACCESS : LIMITED', 72, 168);
+    // 조작(readout)
+    const rows=[['MOVE','W A S D'],['LOOK','MOUSE'],['INSPECT','E / CLICK'],['PAUSE','ESC']];
+    let yy=250;
+    rows.forEach(r=>{ x.shadowBlur=8; x.fillStyle=teal; x.font='36px '+MONO; x.fillText(r[0], 72, yy);
+      x.fillStyle=white; x.fillText(r[1], 600, yy); yy+=64; });
+    x.shadowBlur=0; x.strokeStyle='rgba(123,227,178,0.35)'; x.setLineDash([10,8]);
+    x.beginPath(); x.moveTo(72,yy+12); x.lineTo(cw-92,yy+12); x.stroke(); x.setLineDash([]);
+    // 시스템 + 경고
+    x.shadowBlur=8; x.fillStyle=tdim; x.font='26px '+MONO; x.fillText('[ COLLECTING MEMORY FRAGMENT... ]', 72, yy+34);
+    x.shadowColor='rgba(255,90,70,0.55)'; x.fillStyle=red; x.font='30px '+MONO;
+    x.fillText('EXIT : NOT FOUND', 72, yy+78);
+    x.fillText('DO NOT TRUST THE MAP', 72, yy+118);
+    // 스캔라인 + 청록 틴트
+    x.shadowBlur=0; x.globalAlpha=0.34; x.fillStyle='#000';
+    for(let yL=0; yL<ch; yL+=3) x.fillRect(0,yL,cw,1);
+    x.globalAlpha=0.06; x.fillStyle='#39ff9a'; x.fillRect(0,0,cw,ch); x.globalAlpha=1;
+    tex.needsUpdate=true;
+  }
+  draw();
+  if(document.fonts){ try{ document.fonts.load('30px "Press Start 2P"').then(draw); document.fonts.load('30px "JetBrains Mono"').then(draw); document.fonts.ready.then(draw); }catch(e){} }
+  const W=4.4, H=W*(ch/cw);
+  const grp=new THREE.Group(); grp.position.set(0, 2.7, PHWZ+0.27); scene.add(grp);
+  // 낡은 금속 베젤(뒤판)
+  const bezel=new THREE.Mesh(new THREE.BoxGeometry(W+0.55,H+0.55,0.2), new THREE.MeshStandardMaterial({color:0x5a5a54, roughness:.55, metalness:.55}));
+  bezel.position.z=-0.12; grp.add(bezel);
+  // 화면 안쪽 검정
+  grp.add(new THREE.Mesh(new THREE.PlaneGeometry(W+0.14,H+0.14), new THREE.MeshBasicMaterial({color:0x050806, toneMapped:false})));
+  // CRT 화면 (자체발광 unlit, 플리커)
+  guideMat=new THREE.MeshBasicMaterial({map:tex, transparent:true, toneMapped:false});
+  const screen=new THREE.Mesh(new THREE.PlaneGeometry(W,H), guideMat); screen.position.z=0.04; grp.add(screen);
+  const gl=new THREE.PointLight(0x66ffcc,0.5,6,1.8); gl.position.set(0,2.7,PHWZ+1.6); scene.add(gl);
+}
+function buildPhotos(){
+  const loader=new THREE.TextureLoader();
+  const cluster=new THREE.Group(); cluster.position.set(0, 2.7, -HALF+0.35); scene.add(cluster); // 북쪽 끝 벽(안쪽)
+  const gl=new THREE.PointLight(0xfff0d8,1.25,11,1.6); gl.position.set(0,2.9,-HALF+2.6); scene.add(gl); // 사진 비추는 광원
+  PHOTOS.forEach((p,i)=>{
+    const h=p.w*p.asp;
+    const sub=new THREE.Group(); sub.position.set(p.dx,p.dy,p.dz); sub.rotation.z=p.rz*Math.PI/180; cluster.add(sub);
+    // 인화지 흰 테두리
+    sub.add(new THREE.Mesh(new THREE.PlaneGeometry(p.w+0.18,h+0.18), new THREE.MeshBasicMaterial({color:0xece3cd, toneMapped:false})));
+    // 사진 (unlit → 또렷)
+    const tex=loader.load(srcOf(p)); tex.encoding=THREE.sRGBEncoding; tex.anisotropy=4;
+    const img=new THREE.Mesh(new THREE.PlaneGeometry(p.w,h), new THREE.MeshBasicMaterial({map:tex, toneMapped:false}));
+    img.position.z=0.012; img.userData.idx=i; img.userData.kind='photo'; sub.add(img); frameMeshes.push(img);
+    // 테이프
+    const tape=new THREE.Mesh(new THREE.PlaneGeometry(0.46,0.16), new THREE.MeshBasicMaterial({color:0xfffbe9, transparent:true, opacity:0.45, toneMapped:false}));
+    tape.position.set(0, h/2, 0.02); tape.rotation.z=(i%2?0.22:-0.22); sub.add(tape);
+  });
+}
+
+function buildTarot(){
+  // 동쪽 알코브 벽에 실제 타로 카드 몇 장 (겹쳐 붙임) → 누르면 타로 사이트
+  const loader=new THREE.TextureLoader(), asp=1.5;
+  const cards=[
+    {key:'t0', dx:-1.5, dy:0.6, rz:-7, dz:0.05, w:1.45},
+    {key:'t1', dx:-0.1, dy:0.0, rz: 2, dz:0.20, w:1.7},
+    {key:'t2', dx: 1.5, dy:0.5, rz: 7, dz:0.10, w:1.45},
+    {key:'t3', dx:-0.9, dy:-1.2,rz: 4, dz:0.14, w:1.35},
+    {key:'t4', dx: 1.1, dy:-1.0,rz:-5, dz:0.16, w:1.35},
+  ];
+  const grp=new THREE.Group(); grp.position.set(HALF-0.4, 2.7, 1.5); grp.rotation.y=-Math.PI/2; scene.add(grp);
+  const gl=new THREE.PointLight(0xc9a6ff,1.1,9,1.6); gl.position.set(HALF-2.6,2.8,1.5); scene.add(gl);
+  cards.forEach(cd=>{
+    const h=cd.w*asp;
+    const sub=new THREE.Group(); sub.position.set(cd.dx,cd.dy,cd.dz); sub.rotation.z=cd.rz*Math.PI/180; grp.add(sub);
+    sub.add(new THREE.Mesh(new THREE.PlaneGeometry(cd.w+0.1,h+0.1), new THREE.MeshBasicMaterial({color:0x0a0714, toneMapped:false})));
+    const src=(window.TAROT&&TAROT[cd.key])?TAROT[cd.key]:('../TaroCard/cards/back.webp');
+    const tex=loader.load(src); tex.encoding=THREE.sRGBEncoding; tex.anisotropy=4;
+    const img=new THREE.Mesh(new THREE.PlaneGeometry(cd.w,h), new THREE.MeshBasicMaterial({map:tex, toneMapped:false}));
+    img.position.z=0.012; img.userData.kind='link'; img.userData.url='https://sia-tarot.akarollsdev.workers.dev/';
+    img.userData.label={ko:'시아 타로',en:'SIA TAROT'}; sub.add(img); frameMeshes.push(img);
+  });
+}
+function buildDash(){
+  // 동쪽 알코브, 타로 옆 — 오락실 모니터(어트랙트 화면) → 누르면 대시 사이트
+  const cw=1024, ch=720; const c=document.createElement('canvas'); c.width=cw; c.height=ch; const x=c.getContext('2d');
+  const tex=new THREE.CanvasTexture(c); tex.encoding=THREE.sRGBEncoding; tex.anisotropy=4;
+  const PX='"Press Start 2P",monospace';
+  function draw(){
+    const g=x.createLinearGradient(0,0,0,ch); g.addColorStop(0,'#1a0f04'); g.addColorStop(.55,'#3a2c0c'); g.addColorStop(.8,'#241a08'); g.addColorStop(1,'#0c0814'); x.fillStyle=g; x.fillRect(0,0,cw,ch);
+    const fy=ch*0.70;
+    for(let i=0;i<4;i++){ const cx=130+i*255; const gg=x.createLinearGradient(cx,76,cx,fy); gg.addColorStop(0,'rgba(255,235,150,0.22)'); gg.addColorStop(1,'rgba(255,235,150,0)'); x.fillStyle=gg; x.beginPath(); x.moveTo(cx-46,76); x.lineTo(cx+46,76); x.lineTo(cx+120,fy); x.lineTo(cx-120,fy); x.closePath(); x.fill(); x.fillStyle='rgba(255,246,210,0.92)'; x.fillRect(cx-58,66,116,10); }
+    x.shadowColor='rgba(255,60,180,0.8)'; x.shadowBlur=16; x.strokeStyle='#ff3cb4'; x.lineWidth=4; x.beginPath(); x.moveTo(0,fy); x.lineTo(cw,fy); x.stroke(); x.shadowBlur=0;
+    x.fillStyle='rgba(255,60,180,0.12)'; for(let xx=0;xx<cw;xx+=46) x.fillRect(xx, fy+22, 24, 5);
+    // 러너(픽셀)
+    const rx=170, ry=fy;
+    x.fillStyle='#cdb4ff'; x.fillRect(rx, ry-86, 40, 16);
+    x.fillStyle='#f0d49a'; x.fillRect(rx+4, ry-74, 32, 26);
+    x.fillStyle='#241a33'; x.fillRect(rx+10, ry-66, 6,7); x.fillRect(rx+24, ry-66,6,7);
+    x.fillStyle='#7a5fb0'; x.fillRect(rx-2, ry-50, 44, 38);
+    x.fillStyle='#ff3cb4'; x.fillRect(rx-6, ry-46, 6, 18);
+    x.fillStyle='#4a3a6b'; x.fillRect(rx+4, ry-14, 14, 14); x.fillRect(rx+24, ry-14, 14, 14);
+    // 스마일러
+    const sx=cw-170; x.fillStyle='#0c0a12'; x.fillRect(sx, fy-48, 46, 48); x.fillStyle='#ff3a3a'; x.fillRect(sx+10,fy-34,8,8); x.fillRect(sx+30,fy-34,8,8); x.fillStyle='#f7f3d0'; x.fillRect(sx+8, fy-16, 32, 6);
+    // HUD
+    x.textBaseline='top'; x.shadowBlur=8;
+    x.shadowColor='rgba(255,60,180,0.6)'; x.fillStyle='#ff3cb4'; x.font='22px '+PX; x.fillText('1UP', 28, 22); x.fillStyle='#fff'; x.fillText('000022', 28, 52);
+    x.shadowColor='rgba(255,216,74,0.6)'; x.fillStyle='#ffd84a'; x.fillText('HI 000000', cw/2-110, 22);
+    // 타이틀 + INSERT COIN
+    x.textAlign='center';
+    x.shadowColor='rgba(255,60,180,0.85)'; x.shadowBlur=20; x.fillStyle='#ff7ccb'; x.font='34px '+PX; x.fillText('BACKROOM DASH', cw/2, fy+56);
+    x.shadowColor='rgba(255,216,74,0.85)'; x.fillStyle='#ffd84a'; x.font='22px '+PX; x.fillText('INSERT COIN', cw/2, fy+116);
+    x.textAlign='left'; x.shadowBlur=0;
+    x.globalAlpha=0.3; x.fillStyle='#000'; for(let yL=0;yL<ch;yL+=3) x.fillRect(0,yL,cw,1); x.globalAlpha=1;
+    tex.needsUpdate=true;
+  }
+  draw(); if(document.fonts){ try{ document.fonts.ready.then(draw); }catch(e){} }
+  const W=4.7, H=W*(ch/cw);
+  const grp=new THREE.Group(); grp.position.set(HALF-0.4, 2.7, 8); grp.rotation.y=-Math.PI/2; scene.add(grp);
+  const bezel=new THREE.Mesh(new THREE.BoxGeometry(W+0.6,H+0.75,0.26), new THREE.MeshStandardMaterial({color:0x46463f, roughness:.5, metalness:.6})); bezel.position.z=-0.14; grp.add(bezel);
+  grp.add(new THREE.Mesh(new THREE.PlaneGeometry(W+0.16,H+0.16), new THREE.MeshBasicMaterial({color:0x050307, toneMapped:false})));
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(W,H), new THREE.MeshBasicMaterial({map:tex, transparent:true, toneMapped:false}));
+  sign.position.z=0.05; sign.userData.kind='link'; sign.userData.url='https://sia-backroom-dash.pages.dev/'; sign.userData.label={ko:'백룸 대시',en:'BACKROOM DASH'};
+  grp.add(sign); frameMeshes.push(sign);
+  const gl=new THREE.PointLight(0xff6ab0,0.8,10,1.6); gl.position.set(HALF-2.6,2.8,8); scene.add(gl);
+}
+
+function setupInput(){
+  const cv=renderer.domElement;
+  document.getElementById('startScreen').addEventListener('click', requestPlay);
+  document.addEventListener('pointerlockchange', ()=>{
+    locked = (document.pointerLockElement===cv);
+    if(locked){ state='playing'; hideScreens(); }
+    else if(state!=='modal'){ state='paused'; }
+  });
+  document.addEventListener('mousemove', e=>{ if(state!=='playing'||!locked) return;
+    yaw-=e.movementX*0.0022; pitch-=e.movementY*0.0022; pitch=Math.max(-1.45,Math.min(1.45,pitch)); });
+  function interact(){ if(state!=='playing'||!target) return;
+    if(currentKind==='social') openContact();
+    else if(currentKind==='link'){ if(target.userData.url) window.open(target.userData.url,'_blank'); }
+    else openLB(targetIdx); }
+  cv.addEventListener('click', ()=>{ if(state==='playing') interact(); else if(state==='paused') requestPlay(); });
+  addEventListener('keydown', e=>{ keys[e.code]=true;
+    if(e.code==='KeyE') interact();
+    if(state==='modal'){ if(e.code==='Escape') closeModals();
+      else if(document.getElementById('lb').classList.contains('open')){ if(e.code==='ArrowLeft') openLB(cur-1); else if(e.code==='ArrowRight') openLB(cur+1); } } });
+  addEventListener('keyup', e=>{ keys[e.code]=false; });
+  // 라이트박스 컨트롤
+  document.getElementById('lbClose').addEventListener('click', closeModals);
+  document.getElementById('lbPrev').addEventListener('click', ()=>openLB(cur-1));
+  document.getElementById('lbNext').addEventListener('click', ()=>openLB(cur+1));
+  document.getElementById('lb').addEventListener('click', e=>{ if(e.target.id==='lb') closeModals(); });
+  document.getElementById('openBtn').addEventListener('click', ()=>{ if(GAME.external) window.open(GAME.url,'_blank'); else location.href=GAME.url; });
+  // 연락처 모달
+  document.getElementById('cClose').addEventListener('click', closeModals);
+  document.getElementById('contact').addEventListener('click', e=>{ if(e.target.id==='contact') closeModals(); });
+  // 프로젝트 모달
+  document.getElementById('pClose').addEventListener('click', closeModals);
+  document.getElementById('projects').addEventListener('click', e=>{ if(e.target.id==='projects') closeModals(); });
+  setupMagnetic();
+
+  // ── 모바일 터치 조작: 좌 조이스틱(이동) + 화면 드래그(시선) + E 버튼(확인) ──
+  if(isTouch){
+    document.getElementById('touchui').classList.add('on');
+    var _ctl=document.getElementById('ctl'); if(_ctl) _ctl.style.display='none'; // 키보드 힌트 숨김
+    // 조이스틱
+    const joy=document.getElementById('mjoy'), knob=document.getElementById('mknob'); let jid=null, jcx=0, jcy=0;
+    joy.addEventListener('touchstart', e=>{ e.preventDefault(); const t=e.changedTouches[0]; jid=t.identifier; const r=joy.getBoundingClientRect(); jcx=r.left+r.width/2; jcy=r.top+r.height/2; }, {passive:false});
+    joy.addEventListener('touchmove', e=>{ e.preventDefault(); for(const t of e.changedTouches){ if(t.identifier===jid){ let dx=t.clientX-jcx, dy=t.clientY-jcy; const m=Math.hypot(dx,dy), mx=48; if(m>mx){ dx*=mx/m; dy*=mx/m; } knob.style.transform=`translate(${dx}px,${dy}px)`; tMoveX=dx/mx; tMoveZ=-dy/mx; } } }, {passive:false});
+    const jend=e=>{ for(const t of e.changedTouches){ if(t.identifier===jid){ jid=null; tMoveX=0; tMoveZ=0; knob.style.transform=''; } } };
+    joy.addEventListener('touchend', jend); joy.addEventListener('touchcancel', jend);
+    // 시선(캔버스 드래그) + 탭=확인
+    let lid=null, lx=0, ly=0, moved=0;
+    cv.addEventListener('touchstart', e=>{ if(state==='paused'){ requestPlay(); return; } if(state!=='playing') return; const t=e.changedTouches[0]; lid=t.identifier; lx=t.clientX; ly=t.clientY; moved=0; }, {passive:true});
+    cv.addEventListener('touchmove', e=>{ if(state!=='playing') return; for(const t of e.changedTouches){ if(t.identifier===lid){ const ddx=t.clientX-lx, ddy=t.clientY-ly; moved+=Math.abs(ddx)+Math.abs(ddy); yaw-=ddx*0.005; pitch-=ddy*0.005; pitch=Math.max(-1.45,Math.min(1.45,pitch)); lx=t.clientX; ly=t.clientY; } } }, {passive:true});
+    cv.addEventListener('touchend', e=>{ for(const t of e.changedTouches){ if(t.identifier===lid){ lid=null; if(moved<10 && state==='playing' && target) interact(); } } });
+    // E(확인) 버튼
+    const eb=document.getElementById('mE');
+    eb.addEventListener('touchstart', e=>{ e.preventDefault(); if(state==='playing') interact(); else if(state==='paused') requestPlay(); }, {passive:false});
+  }
+}
+function requestPlay(){ if(isTouch){ state='playing'; hideScreens(); } else { const cv=renderer.domElement; if(cv.requestPointerLock) cv.requestPointerLock(); } }
+function hideScreens(){ document.getElementById('startScreen').classList.add('hidden'); }
+function show(id){ document.getElementById(id).classList.remove('hidden'); }
+
+function blocked(x,z){ for(const b of collBoxes){ if(x>b.minX-R&&x<b.maxX+R&&z>b.minZ-R&&z<b.maxZ+R) return true; } return false; }
+
+/* 라이트박스 */
+function openLB(i){
+  cur=(i+PHOTOS.length)%PHOTOS.length; const fr=PHOTOS[cur];
+  if(state!=='modal'){ state='modal'; if(document.exitPointerLock) document.exitPointerLock(); }
+  document.getElementById('lbImg').src=srcOf(fr);
+  document.getElementById('lbIdx').textContent=String(cur+1).padStart(2,'0')+' / '+String(PHOTOS.length).padStart(2,'0')+'  ·  '+fr.t[lang];
+  document.getElementById('lbTag').textContent=GAME.tag[lang];
+  document.getElementById('lbTitle').textContent=GAME.name[lang];
+  document.getElementById('lbDesc').textContent=GAME.desc[lang];
+  document.getElementById('lb').classList.add('open');
+  document.getElementById('hint').classList.remove('show');
+}
+function openContact(){ if(state!=='modal'){ state='modal'; if(document.exitPointerLock) document.exitPointerLock(); }
+  document.getElementById('contact').classList.add('open'); document.getElementById('hint').classList.remove('show'); }
+function openProjects(){ if(state!=='modal'){ state='modal'; if(document.exitPointerLock) document.exitPointerLock(); }
+  document.getElementById('projects').classList.add('open'); document.getElementById('hint').classList.remove('show'); }
+function closeModals(){ document.getElementById('lb').classList.remove('open'); document.getElementById('contact').classList.remove('open'); document.getElementById('projects').classList.remove('open'); state='paused'; }
+
+function setupMagnetic(){ const mag=document.getElementById('mag'),btn=document.getElementById('openBtn'),lbl=document.getElementById('openLbl'); const S=0.4;
+  mag.addEventListener('mousemove',e=>{ const r=btn.getBoundingClientRect(); const dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
+    btn.style.transform=`translate(${dx*S}px,${dy*S}px)`; lbl.style.transform=`translate(${dx*S*.5}px,${dy*S*.5}px)`; });
+  mag.addEventListener('mouseleave',()=>{ btn.style.transform=''; lbl.style.transform=''; }); }
+
+function applyLang(){ const u=UI[lang]; document.documentElement.lang=lang;
+  document.getElementById('langBtn').textContent=u.next; document.getElementById('sublabel').textContent=u.sublabel;
+  document.getElementById('hubBtn').textContent=u.hub; document.getElementById('openLbl').textContent=u.open; document.getElementById('ctl').innerHTML=u.ctl;
+  document.getElementById('scEyebrow').textContent=u.eyebrow; document.getElementById('scTitle').innerHTML=u.title; document.getElementById('scSub').textContent=u.sub;
+  document.getElementById('scEnter').textContent=u.enter; document.getElementById('scLegend').innerHTML=u.legend;
+  document.getElementById('hintTag').textContent=u.inspect;
+  if(document.getElementById('lb').classList.contains('open')) openLB(cur);
+}
+document.getElementById('langBtn').addEventListener('click', ()=>{ lang=lang==='ko'?'en':'ko'; localStorage.setItem('sia_b3_lang',lang); applyLang(); });
+
+const vel=new THREE.Vector3();
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),0.05);
+  if(state==='playing'){
+    camera.rotation.set(pitch,yaw,0,'YXZ');
+    let f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)+tMoveZ;
+    let s=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+tMoveX;
+    f=Math.max(-1,Math.min(1,f)); s=Math.max(-1,Math.min(1,s));
+    const sinY=Math.sin(yaw), cosY=Math.cos(yaw);
+    const fx=-sinY, fz=-cosY, rx=cosY, rz=-sinY;
+    let mx=fx*f+rx*s, mz=fz*f+rz*s; const len=Math.hypot(mx,mz)||1; mx/=len; mz/=len;
+    const SP=5.2, acc=(f||s)?1:0;
+    vel.x+=( mx*SP*acc - vel.x)*Math.min(1,dt*10); vel.z+=( mz*SP*acc - vel.z)*Math.min(1,dt*10);
+    const px=camera.position.x, pz=camera.position.z;
+    let nx=px+vel.x*dt, nz=pz+vel.z*dt;
+    nx=Math.max(-HALF+R,Math.min(HALF-R,nx)); nz=Math.max(-HALF+R,Math.min(HALF-R,nz));
+    if(blocked(nx,pz)) nx=px; if(blocked(nx,nz)) nz=pz;
+    camera.position.x=nx; camera.position.z=nz;
+    camera.position.y=EYE;  // 머리 흔들림 제거
+
+    raycaster.setFromCamera({x:0,y:0}, camera);
+    const hit=raycaster.intersectObjects(frameMeshes,false);
+    if(hit.length && hit[0].distance<5.5){ const o=hit[0].object; target=o; currentKind=o.userData.kind||'photo';
+      if(currentKind==='social'){ targetIdx=-1; document.getElementById('hintName').textContent=(lang==='ko'?'개발자 연락처':'DEV CONTACT'); document.getElementById('hintTag').textContent=(lang==='ko'?'페이지 열기':'open pages'); }
+      else if(currentKind==='link'){ targetIdx=-1; const lb=o.userData.label; document.getElementById('hintName').textContent=(typeof lb==='object'?lb[lang]:lb)||''; document.getElementById('hintTag').textContent=(lang==='ko'?'열기':'open'); }
+      else { targetIdx=o.userData.idx; document.getElementById('hintName').textContent=PHOTOS[targetIdx].t[lang]; document.getElementById('hintTag').textContent=UI[lang].inspect; }
+      document.getElementById('hint').classList.add('show'); document.getElementById('reticle').classList.add('active'); }
+    else { target=null; targetIdx=-1; currentKind=null; document.getElementById('hint').classList.remove('show'); document.getElementById('reticle').classList.remove('active'); }
+    document.getElementById('reticle').classList.add('show');
+  } else { document.getElementById('reticle').classList.remove('show'); document.getElementById('hint').classList.remove('show'); }
+  // 죽어가는 형광등 깜빡임
+  if(flickers.length){ const t=performance.now()*0.001;
+    flickers.forEach((fl,i)=>{ const r=Math.sin(t*13+i*5)*Math.sin(t*7+i*2); let f=1; if(r>0.62) f=0.16; else if(r>0.42) f=0.6;
+      fl.pl.intensity=fl.base*f; fl.panel.material.color.setScalar(0.12+0.88*f); }); }
+  // 가이드 글자 형광등 플리커
+  if(guideMat){ const tt=(performance.now()*0.001)%6.2;
+    guideMat.opacity = (tt>5.0&&tt<5.07)?0.28 : (tt>5.32&&tt<5.38)?0.72 : (tt>5.58&&tt<5.63)?0.48 : 1; }
+  renderer.render(scene,camera);
+}
+function onResize(){ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); }
+
+applyLang();
+if(window.THREE){ try{ init(); }catch(err){ console.error(err); document.getElementById('loading').innerHTML='<div class="err">3D 초기화 오류<br><span style="font-size:10px;opacity:.6">'+(err&&err.message||err)+'</span></div>'; } }
+</script>
+</body>
+</html>

@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SIA.SYS // ARCADE — 구독자님, 저기로 갈까요?</title>
+<meta name="description" content="SIA.SYS 아케이드 — 시아의 게임/콘텐츠 허브. 스크롤해서 게임을 고르세요." />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css" rel="stylesheet">
+<style>
+  :root{
+    --pink:#ff3cb4; --yellow:#ffd84a; --void:#0a0612; --amber:#d4a847;
+    --cyan:#48e0ff; --green:#7CFF6B; --violet:#b98cff;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; overflow-x:hidden; }
+  body{
+    min-height:100dvh;
+    background:#05030c;
+    font-family:'Noto Sans KR','Galmuri11',sans-serif;
+    color:#fff;
+    overflow-x:hidden;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  /* ── 전역 CRT 오버레이 ── */
+  .scanlines{
+    position:fixed; inset:0; pointer-events:none; z-index:999;
+    background:repeating-linear-gradient(to bottom,
+      transparent 0 2px, rgba(0,0,0,.14) 3px 4px);
+    mix-blend-mode:multiply;
+  }
+  .vignette{
+    position:fixed; inset:0; pointer-events:none; z-index:998;
+    background:radial-gradient(ellipse at center, transparent 42%, rgba(0,0,0,.6) 100%);
+  }
+  .flickerfx{
+    position:fixed; inset:0; pointer-events:none; z-index:997;
+    background:rgba(180,150,255,.022);
+    animation:flick 6s steps(2) infinite;
+  }
+  @keyframes flick{ 0%,96%,100%{opacity:0} 97%{opacity:.6} 98%{opacity:0} 99%{opacity:.35} }
+
+  /* ── 공용 스티키 헤더 ── */
+  header{
+    position:sticky; top:0; z-index:100;
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px clamp(14px,3vw,24px);
+    background:rgba(10,6,18,.9); border-bottom:1px solid rgba(255,60,180,.22);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  }
+  .logo{
+    font-family:'Press Start 2P',monospace; font-size:clamp(10px,2.4vw,14px);
+    color:var(--pink); letter-spacing:1px;
+    text-shadow:0 0 8px rgba(255,60,180,.6);
+  }
+  .logo b{ color:var(--yellow); text-shadow:0 0 8px rgba(255,216,74,.6); }
+  .h-right{ display:flex; align-items:center; gap:8px; }
+  .credit{
+    font-family:'Press Start 2P',monospace; font-size:8px; letter-spacing:1px;
+    color:rgba(255,255,255,.7); cursor:pointer;
+  }
+  .credit b{ color:var(--yellow); text-shadow:0 0 8px rgba(255,216,74,.6); }
+  .sysbtn{
+    font-family:'Press Start 2P',monospace; font-size:8px; line-height:1; cursor:pointer;
+    background:rgba(255,60,180,.12); color:#fff; letter-spacing:1px;
+    border:1px solid rgba(255,60,180,.5); border-radius:5px;
+    padding:7px 7px; transition:transform .1s, background .2s;
+  }
+  .sysbtn:hover{ background:rgba(255,60,180,.25); }
+  .sysbtn:active{ transform:scale(.92); }
+  .sysbtn.off{ opacity:.45; filter:grayscale(1); }
+  .live{
+    display:flex; align-items:center; gap:6px;
+    font-family:'Press Start 2P',monospace; font-size:8px; color:var(--yellow); letter-spacing:1px;
+  }
+  .dot{ width:7px; height:7px; border-radius:50%; background:var(--pink);
+        box-shadow:0 0 7px var(--pink); animation:pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.25} }
+
+  /* ══════════════════════════════════ HERO ══════════════════════════════════ */
+  #hero{
+    position:relative; min-height:calc(100dvh - 46px);
+    display:flex; flex-direction:column; align-items:center; overflow:hidden;
+  }
+  .hero-bg{
+    position:absolute; inset:0; z-index:0;
+    background:radial-gradient(ellipse at 50% 30%, #d4a847 0%, #8b6a1f 22%, #2a1d08 54%, #0a0612 100%);
+  }
+  .hero-bg::before{
+    content:''; position:absolute; inset:0;
+    background-image:
+      linear-gradient(transparent 95%, rgba(0,0,0,.4) 95%),
+      linear-gradient(90deg, transparent 95%, rgba(0,0,0,.4) 95%);
+    background-size:60px 60px;
+    transform:perspective(600px) rotateX(58deg) translateY(18%);
+    transform-origin:center; opacity:.26;
+  }
+  .hero-neon-grid{
+    position:absolute; inset:0; z-index:1; pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,60,180,.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,60,180,.07) 1px, transparent 1px);
+    background-size:40px 40px;
+  }
+  .character-zone{
+    flex:1; position:relative; z-index:3;
+    display:flex; align-items:flex-end; justify-content:center;
+    width:100%; padding-top:18px;
+  }
+  .sia-img{
+    width:60%; max-width:260px; height:auto; display:block; border-radius:16px;
+    filter:drop-shadow(0 0 28px rgba(255,60,180,.55));
+    animation:float-char 4s ease-in-out infinite;
+  }
+  .sia-fallback{
+    width:60%; max-width:260px; aspect-ratio:3/4;
+    border:1px dashed rgba(255,60,180,.35); display:none;
+    align-items:center; justify-content:center;
+    font-family:'VT323',monospace; font-size:13px; color:rgba(255,60,180,.45);
+    letter-spacing:1px; text-align:center;
+  }
+  @keyframes float-char{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-13px)} }
+
+  .hero-content{
+    position:relative; z-index:4; width:100%; max-width:480px;
+    padding:16px 28px 78px; text-align:center;
+  }
+  .warn-badge{
+    display:inline-block; font-family:'VT323',monospace; font-size:14px;
+    color:var(--yellow); border:1px dashed rgba(255,216,74,.42);
+    padding:3px 14px; margin-bottom:18px; letter-spacing:2px;
+  }
+  .main-title{
+    font-family:'Noto Sans KR',sans-serif; font-weight:900;
+    font-size:clamp(30px,9vw,54px); line-height:1.22; color:#fff;
+    text-shadow:2px 2px 0 var(--pink), 4px 4px 0 #6a1240, 0 0 30px rgba(255,60,180,.45);
+    margin-bottom:12px; min-height:2.5em;
+  }
+  .cursor{
+    display:inline-block; width:3px; height:1em; background:var(--pink);
+    margin-left:4px; vertical-align:middle; animation:cursor-blink .7s steps(1) infinite;
+  }
+  @keyframes cursor-blink{ 50%{opacity:0} }
+  .sub-eng{
+    font-family:'Press Start 2P',monospace; font-size:7px;
+    color:rgba(255,216,74,.6); letter-spacing:2px; margin-bottom:28px;
+  }
+  .hero-cta{
+    font-family:'Press Start 2P',monospace; font-size:13px; padding:15px 30px;
+    background:linear-gradient(180deg,var(--pink),#c41a86); color:#fff;
+    border:2px solid #fff; cursor:pointer; letter-spacing:2px; border-radius:4px;
+    text-shadow:1px 1px 0 rgba(0,0,0,.35);
+    box-shadow:0 0 0 2px var(--pink), 0 0 18px rgba(255,60,180,.6);
+    animation:btnglow 1.6s ease-in-out infinite; transition:transform .1s;
+    display:inline-block; margin:0 auto 14px; text-decoration:none;
+  }
+  .hero-cta:hover{ transform:translateY(-2px) scale(1.04); }
+  .hero-cta:active{ transform:translateY(1px) scale(.98); }
+  @keyframes btnglow{
+    0%,100%{ box-shadow:0 0 0 2px var(--pink),0 0 12px rgba(255,60,180,.45);}
+    50%{ box-shadow:0 0 0 2px var(--pink),0 0 30px rgba(255,60,180,.9);}
+  }
+  .press-hint{ font-family:'VT323',monospace; font-size:15px; color:rgba(255,255,255,.38); letter-spacing:3px; }
+  .scroll-cue{
+    position:absolute; bottom:14px; left:50%; transform:translateX(-50%); z-index:4;
+    font-family:'VT323',monospace; font-size:13px; color:rgba(255,255,255,.4);
+    letter-spacing:2px; animation:bounce-cue 1.8s ease-in-out infinite;
+  }
+  @keyframes bounce-cue{ 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(7px)} }
+
+  /* ══════════════════════════════════ CORRIDOR (짧은 전환) ══════════════════════════════════ */
+  #corridor{
+    position:relative; min-height:56vh; overflow:hidden;
+    display:flex; align-items:center; justify-content:center; background:#070410;
+  }
+  .corridor-bg{ position:absolute; inset:0; background:radial-gradient(ellipse at 50% 50%, #3a2400 0%, #160d00 45%, #070410 100%); }
+  .corridor-scene{ position:absolute; inset:0; perspective:460px; perspective-origin:50% 50%; overflow:hidden; }
+  .corridor-floor, .corridor-ceiling{
+    position:absolute; left:-120%; right:-120%; height:230%;
+    background-image:
+      linear-gradient(rgba(212,168,71,.5) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(212,168,71,.5) 1px, transparent 1px);
+    background-size:80px 80px; will-change:background-position;
+  }
+  .corridor-floor{ bottom:-10%; transform-origin:50% 100%; transform:rotateX(78deg) scaleY(calc(1 + var(--warp,0))); will-change:transform,background-position; }
+  .corridor-ceiling{ top:-10%; transform-origin:50% 0%; transform:rotateX(-78deg) scaleY(calc(1 + var(--warp,0))); will-change:transform,background-position; background-image:
+      linear-gradient(rgba(212,168,71,.26) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(212,168,71,.26) 1px, transparent 1px); }
+  .corridor-fog{
+    position:absolute; inset:0; z-index:2;
+    background:
+      radial-gradient(ellipse at 50% 50%, transparent 10%, rgba(7,4,16,.72) 65%),
+      linear-gradient(to bottom, rgba(7,4,16,.55) 0%, transparent 25%, transparent 75%, rgba(7,4,16,.55) 100%);
+  }
+  .corridor-edge-l, .corridor-edge-r{ position:absolute; top:0; bottom:0; width:26%; z-index:3; }
+  .corridor-edge-l{ left:0; background:linear-gradient(90deg, rgba(7,4,16,.96) 0%, transparent 100%); }
+  .corridor-edge-r{ right:0; background:linear-gradient(270deg, rgba(7,4,16,.96) 0%, transparent 100%); }
+  .corridor-content{ position:relative; z-index:5; text-align:center; padding:24px; pointer-events:none; }
+  .corridor-eyebrow{ font-family:'Press Start 2P',monospace; font-size:7px; color:rgba(255,216,74,.45); letter-spacing:6px; margin-bottom:22px; }
+  .corridor-title{
+    font-family:'Press Start 2P',monospace; font-size:clamp(20px,6.5vw,40px); color:var(--yellow);
+    text-shadow:0 0 12px rgba(255,216,74,.9), 0 0 32px rgba(255,216,74,.5), 0 0 64px rgba(255,216,74,.2);
+    letter-spacing:5px; margin-bottom:18px; animation:flicker-light 7s ease-in-out infinite;
+  }
+  .corridor-sub{ font-family:'VT323',monospace; font-size:16px; color:rgba(255,255,255,.4); letter-spacing:3px; }
+  @keyframes flicker-light{ 0%,88%,92%,95%,97%,100%{opacity:1} 89%{opacity:.3} 93%{opacity:.7} 96%{opacity:.5} }
+
+  /* ══════════════════════════════════ ARCADE (GAME SELECT) ══════════════════════════════════ */
+  .cabinet{ width:100%; max-width:1000px; margin:0 auto; padding:clamp(40px,7vw,72px) clamp(12px,3vw,24px) 40px; scroll-margin-top:54px; }
+  .arcade-head{ text-align:center; margin-bottom:clamp(20px,4vw,30px); }
+  .arcade-eyebrow{ font-family:'Press Start 2P',monospace; font-size:8px; color:rgba(255,60,180,.6); letter-spacing:3px; margin-bottom:10px; }
+  .arcade-kicker{ font-family:'VT323',monospace; font-size:16px; color:rgba(255,255,255,.5); letter-spacing:2px; }
+
+  .screen{
+    position:relative; border-radius:16px; padding:12px;
+    background:linear-gradient(180deg,#241a33,#120a1e);
+    box-shadow:0 0 0 2px rgba(255,60,180,.5), 0 0 26px rgba(255,60,180,.32),
+      0 0 70px rgba(255,60,180,.1), inset 0 0 0 1px rgba(255,255,255,.05);
+  }
+  .crt{
+    position:relative; border-radius:11px; overflow:hidden; background:#0a0612;
+    padding:clamp(20px,4vw,38px) clamp(14px,3vw,30px) clamp(22px,4vw,34px);
+    box-shadow:inset 0 0 70px rgba(0,0,0,.85);
+  }
+  .crt::after{
+    content:''; position:absolute; inset:0; z-index:6; pointer-events:none;
+    background:radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(5,2,12,.5) 90%, rgba(5,2,12,.85) 100%);
+    border-radius:11px;
+  }
+  .glare{ position:absolute; top:0; left:0; right:0; height:38%; z-index:5; pointer-events:none;
+    background:linear-gradient(180deg, rgba(255,255,255,.05), transparent); border-radius:11px 11px 0 0; }
+
+  .select-head{ text-align:center; position:relative; z-index:4; margin-bottom:clamp(20px,4vw,34px); }
+  .eyebrow{ font-family:'Press Start 2P',monospace; font-size:8px; letter-spacing:3px; color:rgba(255,216,74,.6); margin-bottom:14px; }
+  .select-title{
+    font-family:'Press Start 2P',monospace; font-size:clamp(15px,4.4vw,30px); color:#fff;
+    letter-spacing:2px; line-height:1.5; text-shadow:2px 2px 0 var(--pink), 4px 4px 0 #6a1240, 0 0 28px rgba(255,60,180,.5);
+  }
+  .select-title .arr{ color:var(--yellow); text-shadow:0 0 14px rgba(255,216,74,.7); animation:bl 1s steps(1) infinite; }
+  @keyframes bl{ 50%{opacity:.25} }
+
+  .rack{
+    position:relative; z-index:4; display:grid; grid-template-columns:repeat(3,1fr);
+    gap:clamp(10px,2.2vw,22px); align-items:stretch; margin-bottom:clamp(20px,4vw,32px);
+    max-width:680px; margin-left:auto; margin-right:auto;
+  }
+  .cart{
+    --c:var(--pink); position:relative; cursor:pointer; width:auto;
+    background:linear-gradient(180deg,#1b1228,#120a1c);
+    border:2px solid color-mix(in srgb, var(--c) 45%, transparent);
+    border-radius:12px; padding:14px 13px 16px;
+    display:flex; flex-direction:column; align-items:center; gap:11px;
+    transition:transform .16s ease, border-color .2s, box-shadow .25s, filter .25s;
+    filter:saturate(.9) brightness(.92);
+  }
+  .cart::before{
+    content:''; position:absolute; top:-2px; left:50%; transform:translateX(-50%);
+    width:46%; height:5px; border-radius:0 0 5px 5px;
+    background:color-mix(in srgb, var(--c) 70%, #000);
+    box-shadow:0 0 10px color-mix(in srgb, var(--c) 60%, transparent);
+  }
+  .cart:hover{ transform:translateY(-5px); filter:saturate(1) brightness(1); }
+  .cart.sel{
+    transform:translateY(-9px) scale(1.05); border-color:var(--c);
+    box-shadow:0 0 0 2px var(--c), 0 0 26px color-mix(in srgb, var(--c) 65%, transparent), 0 18px 30px rgba(0,0,0,.5);
+    filter:saturate(1.1) brightness(1.05); z-index:2;
+  }
+  .cart.sel::after{
+    content:'▼'; position:absolute; top:-26px; left:50%; transform:translateX(-50%);
+    color:var(--c); font-size:16px; text-shadow:0 0 10px var(--c); animation:bob .8s ease-in-out infinite;
+  }
+  @keyframes bob{ 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(5px)} }
+  .cart-art{
+    width:100%; aspect-ratio:1/1; border-radius:8px; position:relative; overflow:hidden;
+    background:radial-gradient(circle at 50% 36%, color-mix(in srgb, var(--c) 30%, #160d22), #0c0716 78%);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.06), inset 0 0 24px rgba(0,0,0,.6);
+    display:flex; align-items:center; justify-content:center; image-rendering:pixelated;
+  }
+  .cart-emoji{ font-size:clamp(34px,7vw,50px); filter:drop-shadow(0 0 12px color-mix(in srgb, var(--c) 70%, transparent)); }
+  .cart-art .gridfx{
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--c) 14%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--c) 14%, transparent) 1px, transparent 1px);
+    background-size:14px 14px; opacity:.5;
+  }
+  .cart-name{ font-family:'Press Start 2P',monospace; font-size:9px; line-height:1.5; color:#fff;
+    text-align:center; letter-spacing:.5px; min-height:2.6em; display:flex; align-items:center; }
+  .cart-tag{ font-family:'VT323',monospace; font-size:14px; letter-spacing:1px; color:var(--c);
+    text-shadow:0 0 10px color-mix(in srgb, var(--c) 55%, transparent); }
+  .cart-status{ position:absolute; top:8px; right:8px; font-family:'Press Start 2P',monospace;
+    font-size:6px; letter-spacing:1px; padding:3px 5px; border-radius:4px; line-height:1; }
+  .st-live{ color:#06210b; background:var(--green); box-shadow:0 0 10px rgba(124,255,107,.6); }
+  .st-play{ color:#1a0010; background:var(--pink); box-shadow:0 0 10px rgba(255,60,180,.55); }
+
+  .info{
+    position:relative; z-index:4; max-width:620px; margin:0 auto;
+    background:rgba(12,7,22,.82); border:1px solid rgba(255,60,180,.28); border-radius:12px;
+    padding:clamp(16px,3.4vw,24px); backdrop-filter:blur(4px);
+    clip-path:polygon(0 0, 100% 0, 100% 86%, 96.5% 100%, 0 100%);
+  }
+  .info-tag{ font-family:'VT323',monospace; font-size:16px; letter-spacing:1px; color:var(--yellow); margin-bottom:6px; }
+  .info-title{ font-family:'Press Start 2P',monospace; font-size:clamp(13px,3.4vw,19px); color:#fff;
+    line-height:1.5; margin-bottom:12px; text-shadow:2px 2px 0 var(--pink); }
+  .info-desc{ font-size:14px; color:rgba(255,255,255,.74); line-height:1.8; margin-bottom:20px; min-height:3.4em; }
+  .play-row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .play-btn{
+    font-family:'Press Start 2P',monospace; font-size:13px; letter-spacing:1px; padding:14px 26px;
+    color:#fff; cursor:pointer; text-decoration:none;
+    background:linear-gradient(180deg,var(--pink),#c41a86); border:2px solid #fff; border-radius:4px;
+    box-shadow:0 0 0 2px var(--pink), 0 0 20px rgba(255,60,180,.65); text-shadow:1px 1px 0 rgba(0,0,0,.4);
+    animation:btnglow 1.6s ease-in-out infinite; transition:transform .1s;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .play-btn:hover{ transform:translateY(-2px) scale(1.04); }
+  .play-btn:active{ transform:translateY(1px) scale(.98); }
+  .coin-hint{ font-family:'Press Start 2P',monospace; font-size:9px; letter-spacing:1px;
+    color:rgba(255,255,255,.5); animation:bl .9s steps(1) infinite; }
+  .ctl-hint{ position:relative; z-index:4; text-align:center; margin-top:clamp(18px,3.6vw,28px);
+    font-family:'VT323',monospace; font-size:15px; color:rgba(255,255,255,.5); letter-spacing:1px; }
+  .cap{ font-family:'Press Start 2P',monospace; font-size:8px; color:var(--yellow);
+    border:1px solid rgba(255,216,74,.45); border-radius:4px; padding:4px 6px; background:rgba(255,216,74,.06); margin:0 2px; }
+
+  /* ── 푸터 / 소셜 ── */
+  .footer{ width:100%; max-width:1000px; margin:0 auto; padding:30px clamp(12px,3vw,24px) 44px; }
+  .foot-eyebrow{ text-align:center; font-family:'Press Start 2P',monospace; font-size:8px;
+    color:rgba(255,60,180,.6); letter-spacing:3px; margin-bottom:18px; }
+  .social-list{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; max-width:620px; margin:0 auto; }
+  .slink{
+    display:flex; align-items:center; gap:12px; padding:13px 16px;
+    background:rgba(18,10,28,.88); border:1px solid rgba(255,60,180,.26);
+    color:#fff; text-decoration:none; border-radius:9px;
+    transition:background .2s,border-color .2s,transform .2s,box-shadow .2s;
+  }
+  .slink:hover{ background:rgba(255,60,180,.1); border-color:var(--pink); transform:translateY(-3px); box-shadow:0 6px 20px rgba(255,60,180,.28); }
+  .slink svg{ width:22px; height:22px; flex-shrink:0; }
+  .slink-name{ font-weight:700; font-size:13px; display:block; }
+  .slink-handle{ font-family:'VT323',monospace; font-size:14px; color:var(--yellow); display:block; margin-top:1px; }
+  .copyright{ text-align:center; margin-top:28px; font-family:'VT323',monospace; font-size:14px; color:rgba(255,255,255,.28); letter-spacing:2px; }
+
+  @media (max-width:600px){
+    .rack{ grid-template-columns:repeat(3,1fr); gap:8px; }
+    .cart{ padding:10px 8px 12px; }
+    .cart-name{ font-size:8px; }
+    .social-list{ grid-template-columns:1fr; }
+  }
+  @media (max-width:380px){ .main-title{ font-size:27px; } }
+
+  /* ══════════════════════════════════ GLOW-UP ══════════════════════════════════ */
+  /* ① 절차적 필름 그레인 */
+  .grain{
+    position:fixed; inset:0; z-index:996; pointer-events:none;
+    opacity:.12; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:180px 180px;
+    animation:grain .7s steps(1) infinite;
+  }
+  @keyframes grain{
+    0%{background-position:0 0} 20%{background-position:-25px 12px} 40%{background-position:18px -22px}
+    60%{background-position:-14px 24px} 80%{background-position:22px 8px} 100%{background-position:0 0}
+  }
+  @media (prefers-reduced-motion:reduce){ .grain{ animation:none; } }
+
+  /* ② 히어로 타이틀 — 색수차 + 글리치 + 잔상 */
+  .main-title{
+    animation:title-chroma 3.2s ease-in-out infinite, title-glitch 7s steps(1) infinite;
+    will-change:transform;
+  }
+  @keyframes title-chroma{
+    0%,100%{ text-shadow:
+      2px 2px 0 var(--pink), 4px 4px 0 #6a1240, 0 0 30px rgba(255,60,180,.5),
+      -2px 0 0 rgba(72,224,255,.55), 2px 0 0 rgba(255,30,90,.55); }
+    50%{ text-shadow:
+      2px 2px 0 var(--pink), 4px 4px 0 #6a1240, 0 0 38px rgba(255,60,180,.65),
+      -3px 0 0 rgba(72,224,255,.6), 3px 0 0 rgba(255,30,90,.6); }
+  }
+  @keyframes title-glitch{
+    0%,90%,100%{ transform:none; clip-path:none; }
+    91%{ transform:translate(-3px,1px); clip-path:inset(18% 0 52% 0); }
+    93%{ transform:translate(3px,-1px); clip-path:inset(62% 0 8% 0); }
+    95%{ transform:translate(-2px,0); clip-path:inset(40% 0 34% 0); }
+    97%{ transform:translate(2px,1px); clip-path:inset(8% 0 70% 0); }
+  }
+
+  /* ③ 네온 블룸 강화 */
+  .select-title{ text-shadow:2px 2px 0 var(--pink), 4px 4px 0 #6a1240, 0 0 40px rgba(255,60,180,.7), 0 0 80px rgba(255,60,180,.28); }
+  .corridor-title{ text-shadow:0 0 14px rgba(255,216,74,.95), 0 0 40px rgba(255,216,74,.6), 0 0 80px rgba(255,216,74,.28); }
+  .screen{ box-shadow:0 0 0 2px rgba(255,60,180,.55), 0 0 34px rgba(255,60,180,.42), 0 0 90px rgba(255,60,180,.16), inset 0 0 0 1px rgba(255,255,255,.05); }
+  .cart.sel{ box-shadow:0 0 0 2px var(--c), 0 0 34px color-mix(in srgb, var(--c) 80%, transparent), 0 0 60px color-mix(in srgb, var(--c) 35%, transparent), 0 18px 30px rgba(0,0,0,.5); }
+  .cart.sel .cart-emoji{ filter:drop-shadow(0 0 18px color-mix(in srgb, var(--c) 90%, transparent)); }
+
+  /* ④ 카트리지 3D 틸트 글레어 */
+  .cart{ will-change:transform; transform-style:preserve-3d; }
+  .cart-glare{ position:absolute; inset:0; border-radius:12px; pointer-events:none; opacity:0; transition:opacity .3s; z-index:5; }
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+<div class="flickerfx"></div>
+<div class="grain"></div>
+
+<!-- 공용 헤더 -->
+<header>
+  <div class="logo">SIA<b>.SYS</b> // ARCADE</div>
+  <div class="h-right">
+    <span class="credit" id="creditBox">CREDIT <b id="credit">01</b></span>
+    <button class="sysbtn" id="langBtn" title="언어 / Language">EN</button>
+    <button class="sysbtn" id="sndBtn" title="소리">SND</button>
+    <span class="live"><span class="dot"></span>ONLINE</span>
+  </div>
+</header>
+
+<!-- ① HERO -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-neon-grid"></div>
+
+  <div class="character-zone">
+    <img src="assets/sia.png" alt="Sia" class="sia-img" id="siaImg">
+    <div class="sia-fallback" id="siaFallback">[ SIA.PNG ]<br>이미지 준비 중</div>
+  </div>
+
+  <div class="hero-content">
+    <div class="warn-badge" id="warnBadge">▲ 하꼬 스트리머의 백룸 탈출기</div>
+    <h1 class="main-title" id="mainTitle"></h1>
+    <div class="sub-eng">▸ SIA.SYS — GAME &amp; CONTENT HUB</div>
+    <a class="hero-cta" id="heroCta" href="#arcade">▼ 게임 고르기</a>
+    <div class="press-hint" id="pressHint">SCROLL TO SELECT</div>
+  </div>
+
+  <div class="scroll-cue">SCROLL ▼</div>
+</section>
+
+<!-- ② CORRIDOR (짧은 전환) -->
+<section id="corridor">
+  <div class="corridor-bg"></div>
+  <div class="corridor-scene">
+    <div class="corridor-floor" id="corridorFloor"></div>
+    <div class="corridor-ceiling" id="corridorCeiling"></div>
+  </div>
+  <div class="corridor-fog"></div>
+  <div class="corridor-edge-l"></div>
+  <div class="corridor-edge-r"></div>
+  <div class="corridor-content">
+    <div class="corridor-eyebrow">▸ LEVEL 0</div>
+    <div class="corridor-title">BACKROOMS</div>
+    <div class="corridor-sub" id="corridorSub">흰 벽 · 누런 형광등 · 출구 없음</div>
+  </div>
+</section>
+
+<!-- ③ ARCADE — GAME SELECT -->
+<div class="cabinet" id="arcade">
+  <div class="arcade-head">
+    <div class="arcade-eyebrow" id="arcadeEyebrow">▸ INSERT COIN</div>
+    <div class="arcade-kicker" id="arcadeKicker">어떤 방으로 들어갈래?</div>
+  </div>
+  <div class="screen">
+    <div class="crt">
+      <div class="glare"></div>
+      <div class="select-head">
+        <div class="eyebrow" id="eyebrow">PUSH ◂ ▸ · ENTER TO PLAY</div>
+        <h2 class="select-title"><span class="arr">▸</span> <span id="selTitle">SELECT YOUR GAME</span> <span class="arr">◂</span></h2>
+      </div>
+      <div class="rack" id="rack"></div>
+      <div class="info">
+        <div class="info-tag" id="infoTag"></div>
+        <div class="info-title" id="infoTitle"></div>
+        <p class="info-desc" id="infoDesc"></p>
+        <div class="play-row">
+          <a class="play-btn" id="playBtn" href="#"><span>▶</span> <span id="playLabel">PLAY</span></a>
+          <span class="coin-hint" id="coinHint">INSERT COIN</span>
+        </div>
+      </div>
+      <div class="ctl-hint" id="ctlHint"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ④ FOOTER -->
+<footer class="footer">
+  <div class="foot-eyebrow" id="footEyebrow">▸ FOLLOW SIA</div>
+  <nav class="social-list" aria-label="소셜 링크">
+    <a class="slink" href="https://www.youtube.com/@akarolls" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="#ff3cb4"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .5 12 31 31 0 0 0 1 16.8a3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1c.4-1.6.5-3.2.5-4.8s-.1-3.2-.5-4.8zM9.7 15.5V8.5l6.2 3.5z"/></svg>
+      <span><span class="slink-name">YouTube</span><span class="slink-handle">@akarolls</span></span>
+    </a>
+    <a class="slink" href="https://www.instagram.com/akarolls.dev/" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#ff3cb4" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="#ff3cb4" stroke="none"/></svg>
+      <span><span class="slink-name">Instagram</span><span class="slink-handle">@akarolls.dev</span></span>
+    </a>
+    <a class="slink" href="https://discord.gg/fvQKn7Czx9" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="#ff3cb4"><path d="M20.3 4.4A19.6 19.6 0 0 0 15.4 3c-.2.4-.5.9-.7 1.3a18 18 0 0 0-5.4 0C9.1 3.9 8.8 3.4 8.6 3A19.7 19.7 0 0 0 3.7 4.4C.5 9.2-.3 13.8.1 18.4a19.7 19.7 0 0 0 6 3c.5-.7.9-1.4 1.3-2.2-.7-.3-1.4-.6-2-1 .2-.1.3-.3.5-.4a14 14 0 0 0 12.2 0l.5.4c-.7.4-1.3.7-2 1 .4.8.8 1.5 1.3 2.2a19.6 19.6 0 0 0 6-3c.5-5.2-.9-9.8-3.7-14zM8 15.5c-1.2 0-2.2-1.1-2.2-2.5s1-2.5 2.2-2.5 2.2 1.1 2.2 2.5-1 2.5-2.2 2.5zm8 0c-1.2 0-2.2-1.1-2.2-2.5s1-2.5 2.2-2.5 2.2 1.1 2.2 2.5-1 2.5-2.2 2.5z"/></svg>
+      <span><span class="slink-name">Discord</span><span class="slink-handle">초대 링크</span></span>
+    </a>
+    <a class="slink" href="mailto:akarollsdev@gmail.com">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#ff3cb4" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7" stroke-linejoin="round"/></svg>
+      <span><span class="slink-name">Mail</span><span class="slink-handle">akarollsdev@gmail.com</span></span>
+    </a>
+  </nav>
+  <div class="copyright">© AKAROLLS · SIA.SYS ARCADE · build 2026.06</div>
+</footer>
+
+<script>
+/* =========================================================================
+   SIA.SYS // ARCADE — 게임소개(HERO) → 백룸 복도 → GAME SELECT 허브
+   ▸ 프로젝트 추가/수정은 아래 GAMES 배열만 고치면 됨.
+   ▸ 배포 후엔 url 을 배포 주소로 갈아끼우세요.
+   ========================================================================= */
+const GAMES = [
+  {
+    id:'dash', color:'var(--pink)', emoji:'🏃‍♀️',
+    url:'../Game_1/index.html',                 // 로컬 2D 러너
+    status:'play',
+    tag:{ ko:'2D 러너', en:'2D RUNNER' },
+    name:{ ko:'백룸 대시', en:'BACKROOM DASH' },
+    desc:{
+      ko:'하꼬 스트리머 시아의 백룸 탈출 런! 스마일러는 점프, 날아오는 악플은 숙여서 피해라. 크롬 공룡 게임 리스킨.',
+      en:"Sia's backrooms dash. Jump the Smiler, duck the flying hate. A neon arcade re-skin of the Chrome dino."
+    }
+  },
+  {
+    id:'run3d', color:'var(--cyan)', emoji:'🌀',
+    url:'../Game_2/index.html',                 // 로컬 3D 러너
+    status:'play',
+    tag:{ ko:'3D 러너', en:'3D RUNNER' },
+    name:{ ko:'백룸 러너 3D', en:'BACKROOM RUNNER 3D' },
+    desc:{
+      ko:'끝없이 이어지는 누런 백룸 복도를 1인칭으로 질주하는 3D 러너. 형광등, 흰 벽, 출구는 없다.',
+      en:'A first-person 3D dash through the endless yellow backrooms corridor. Buzzing lights, white walls, no exit.'
+    }
+  },
+  {
+    id:'tarot', color:'var(--violet)', emoji:'🔮',
+    url:'https://sia-tarot.akarollsdev.workers.dev/',  // 배포됨
+    status:'live',
+    tag:{ ko:'✦ 매일 타로', en:'✦ DAILY' },
+    name:{ ko:'시아 타로', en:'SIA TAROT' },
+    desc:{
+      ko:'56장 리소그래프 타로 덱으로 매일 한 장 뽑기. 오늘의 운세와 카드 의미, 컬렉션 수집까지. (KR/EN)',
+      en:'Draw one card a day from a 56-card risograph tarot deck. Daily fortune, card meanings, collection tracking. (KR/EN)'
+    }
+  }
+];
+
+const STATUS_CLASS = { live:'st-live', play:'st-play' };
+const STATUS_LABEL = { live:{ko:'LIVE',en:'LIVE'}, play:{ko:'PLAY',en:'PLAY'} };
+
+const UI = {
+  ko:{
+    select:'게임을 고르세요', play:'플레이', open:'열기', coin:'INSERT COIN',
+    eyebrow:'◂ ▸ 선택 · ENTER 실행', foot:'▸ 시아 팔로우', next:'EN',
+    warn:'▲ 하꼬 스트리머의 백룸 탈출기', heroCta:'▼ 게임 고르기', pressHint:'스크롤해서 게임 선택',
+    arcadeEyebrow:'▸ INSERT COIN', arcadeKicker:'어떤 방으로 들어갈래?',
+    corridorSub:'흰 벽 · 누런 형광등 · 출구 없음',
+    titleLines:['구독자님,','저기로 갈까요?'],
+    ctl:'<span class="cap">◂</span><span class="cap">▸</span> 선택 · <span class="cap">ENTER</span> 실행 · <span class="cap">1</span>–<span class="cap">3</span> 바로가기 · 📱 탭'
+  },
+  en:{
+    select:'SELECT YOUR GAME', play:'PLAY', open:'OPEN', coin:'INSERT COIN',
+    eyebrow:'PUSH ◂ ▸ · ENTER TO PLAY', foot:'▸ FOLLOW SIA', next:'KR',
+    warn:"▲ A SMALL STREAMER'S BACKROOMS RUN", heroCta:'▼ PICK A GAME', pressHint:'SCROLL TO SELECT',
+    arcadeEyebrow:'▸ INSERT COIN', arcadeKicker:'WHICH ROOM WILL YOU ENTER?',
+    corridorSub:'WHITE WALLS · YELLOW LIGHT · NO EXIT',
+    titleLines:['Shall we go','over there?'],
+    ctl:'<span class="cap">◂</span><span class="cap">▸</span> SELECT · <span class="cap">ENTER</span> PLAY · <span class="cap">1</span>–<span class="cap">3</span> JUMP · 📱 TAP'
+  }
+};
+
+let lang = localStorage.getItem('sia_arcade_lang')
+  || ((navigator.language||'en').toLowerCase().startsWith('ko') ? 'ko' : 'en');
+let sel = 0;
+let muted = localStorage.getItem('sia_arcade_muted')==='1';
+
+/* ---------- 8비트 사운드 ---------- */
+let AC=null;
+function initAudio(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(AC&&AC.state==='suspended') AC.resume(); }
+function tone(freq,dur,type,vol,slideTo){
+  if(muted||!AC) return;
+  const t=AC.currentTime, o=AC.createOscillator(), g=AC.createGain();
+  o.type=type||'square'; o.frequency.setValueAtTime(freq,t);
+  if(slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(1,slideTo),t+dur);
+  g.gain.setValueAtTime(vol||0.12,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t+dur+0.02);
+}
+const sfxMove =()=>tone(660,0.05,'square',0.1);
+const sfxPick =()=>{ tone(988,0.06,'square',0.14); setTimeout(()=>tone(1319,0.12,'square',0.14),70); };
+const sfxCoin =()=>{ tone(988,0.07,'square',0.16); setTimeout(()=>tone(1319,0.16,'square',0.16),85); };
+
+/* ---------- 카트리지 렌더 ---------- */
+const rack = document.getElementById('rack');
+function buildRack(){
+  rack.innerHTML='';
+  GAMES.forEach((g,i)=>{
+    const el=document.createElement('div');
+    el.className='cart'+(i===sel?' sel':'');
+    el.style.setProperty('--c', g.color);
+    el.tabIndex=0;
+    el.innerHTML=`
+      <span class="cart-status ${STATUS_CLASS[g.status]}">${STATUS_LABEL[g.status][lang]}</span>
+      <div class="cart-art"><div class="gridfx"></div><span class="cart-emoji">${g.emoji}</span></div>
+      <div class="cart-name">${g.name[lang]}</div>
+      <div class="cart-tag">${g.tag[lang]}</div>
+      <div class="cart-glare"></div>`;
+    el.addEventListener('click',()=>{ if(i===sel){ launch(); } else { select(i,true); } });
+    el.addEventListener('mouseenter',()=>{ if(i!==sel) select(i,true); });
+    // 3D 틸트 + 글레어
+    const glare=el.querySelector('.cart-glare');
+    el.addEventListener('mousemove',e=>{
+      const r=el.getBoundingClientRect();
+      const dx=(e.clientX-(r.left+r.width/2))/(r.width/2);
+      const dy=(e.clientY-(r.top+r.height/2))/(r.height/2);
+      el.style.transition='transform .05s linear, border-color .2s, box-shadow .25s, filter .25s';
+      el.style.transform=`perspective(680px) rotateX(${(-dy*9).toFixed(2)}deg) rotateY(${(dx*12).toFixed(2)}deg) scale(1.06) translateY(-9px)`;
+      glare.style.opacity='1';
+      glare.style.background=`radial-gradient(circle at ${((dx+1)/2*100).toFixed(0)}% ${((dy+1)/2*100).toFixed(0)}%, color-mix(in srgb, var(--c) 38%, transparent) 0%, transparent 62%)`;
+    });
+    el.addEventListener('mouseleave',()=>{
+      el.style.transition='transform .4s ease, border-color .2s, box-shadow .25s, filter .25s';
+      el.style.transform=''; glare.style.opacity='0';
+    });
+    rack.appendChild(el);
+  });
+}
+function updateInfo(){
+  const g=GAMES[sel], u=UI[lang];
+  document.getElementById('infoTag').textContent='▸ '+g.tag[lang];
+  document.getElementById('infoTitle').textContent=g.name[lang];
+  document.getElementById('infoDesc').textContent=g.desc[lang];
+  const btn=document.getElementById('playBtn');
+  btn.href=g.url;
+  if(g.status==='live') btn.target='_blank'; else btn.removeAttribute('target');
+  document.getElementById('playLabel').textContent = g.status==='live' ? u.open : u.play;
+}
+function select(i,sound){
+  sel=(i+GAMES.length)%GAMES.length;
+  document.querySelectorAll('.cart').forEach((c,idx)=>c.classList.toggle('sel',idx===sel));
+  updateInfo();
+  if(sound){ initAudio(); sfxMove(); }
+}
+function launch(){
+  const g=GAMES[sel];
+  initAudio(); sfxPick(); flashCredit();
+  setTimeout(()=>{ if(g.status==='live') window.open(g.url,'_blank'); else window.location.href=g.url; }, 180);
+}
+let creditN=1;
+function flashCredit(){ creditN=Math.min(99,creditN+1); document.getElementById('credit').textContent=String(creditN).padStart(2,'0'); }
+
+/* ---------- 타이핑 타이틀 ---------- */
+let typeTimer=null;
+function typeTitle(){
+  const el=document.getElementById('mainTitle');
+  const lines=UI[lang].titleLines;
+  if(typeTimer){ clearInterval(typeTimer); typeTimer=null; }
+  el.innerHTML='';
+  const cur=document.createElement('span'); cur.className='cursor'; el.appendChild(cur);
+  const text=lines.join('\n');
+  let i=0;
+  typeTimer=setInterval(()=>{
+    if(i>=text.length){ clearInterval(typeTimer); typeTimer=null; return; }
+    if(text[i]==='\n') el.insertBefore(document.createElement('br'),cur);
+    else el.insertBefore(document.createTextNode(text[i]),cur);
+    i++;
+  },72);
+}
+
+/* ---------- 언어 ---------- */
+function applyLang(){
+  const u=UI[lang];
+  document.documentElement.lang=lang;
+  document.getElementById('langBtn').textContent=u.next;
+  document.getElementById('selTitle').textContent=u.select;
+  document.getElementById('eyebrow').textContent=u.eyebrow;
+  document.getElementById('coinHint').textContent=u.coin;
+  document.getElementById('footEyebrow').textContent=u.foot;
+  document.getElementById('ctlHint').innerHTML=u.ctl;
+  document.getElementById('warnBadge').textContent=u.warn;
+  document.getElementById('heroCta').textContent=u.heroCta;
+  document.getElementById('pressHint').textContent=u.pressHint;
+  document.getElementById('arcadeEyebrow').textContent=u.arcadeEyebrow;
+  document.getElementById('arcadeKicker').textContent=u.arcadeKicker;
+  document.getElementById('corridorSub').textContent=u.corridorSub;
+  buildRack(); updateInfo(); typeTitle();
+}
+document.getElementById('langBtn').onclick=()=>{
+  lang=(lang==='ko')?'en':'ko'; localStorage.setItem('sia_arcade_lang',lang); applyLang();
+};
+
+/* ---------- 사운드 토글 ---------- */
+function applyMute(){ const b=document.getElementById('sndBtn'); b.classList.toggle('off',muted); b.textContent=muted?'MUT':'SND'; }
+document.getElementById('sndBtn').onclick=()=>{ muted=!muted; localStorage.setItem('sia_arcade_muted',muted?'1':'0'); initAudio(); applyMute(); if(!muted) sfxMove(); };
+
+/* ---------- 코인 ---------- */
+document.getElementById('creditBox').onclick=()=>{ initAudio(); sfxCoin(); flashCredit(); };
+
+/* ---------- 키보드 (아케이드가 보일 때만) ---------- */
+window.addEventListener('keydown',e=>{
+  const arcadeTop=document.getElementById('arcade').getBoundingClientRect().top;
+  const arcadeVisible = arcadeTop < window.innerHeight*0.7;
+  if(e.code==='ArrowRight'||e.code==='KeyD'){ if(arcadeVisible){ e.preventDefault(); select(sel+1,true);} }
+  else if(e.code==='ArrowLeft'||e.code==='KeyA'){ if(arcadeVisible){ e.preventDefault(); select(sel-1,true);} }
+  else if(e.code==='Enter'){ if(arcadeVisible){ e.preventDefault(); launch(); } }
+  else if(/^Digit[1-9]$/.test(e.code)){ const n=+e.code.slice(5)-1; if(n<GAMES.length){ document.getElementById('arcade').scrollIntoView({behavior:'smooth'}); select(n,true);} }
+});
+
+/* ---------- play 버튼 sfx ---------- */
+document.getElementById('playBtn').addEventListener('click',()=>{ initAudio(); sfxPick(); flashCredit(); });
+document.getElementById('heroCta').addEventListener('click',()=>{ initAudio(); sfxMove(); });
+
+/* ---------- 캐릭터 이미지 폴백 ---------- */
+(function(){
+  const img=document.getElementById('siaImg'), fb=document.getElementById('siaFallback');
+  function show(){ img.style.display='none'; fb.style.display='flex'; }
+  img.addEventListener('error',show);
+  img.addEventListener('load',()=>{ if(img.naturalWidth===0) show(); });
+})();
+
+/* ---------- 복도 패럴랙스 + 스크롤 속도 왜곡 ---------- */
+(function(){
+  const section=document.getElementById('corridor');
+  const scene=section ? section.querySelector('.corridor-scene') : null;
+  const floor=document.getElementById('corridorFloor'), ceiling=document.getElementById('corridorCeiling');
+  if(!section||!floor) return;
+  let lastY=window.scrollY||0, vel=0;
+  const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  function parallax(){
+    const rect=section.getBoundingClientRect(), h=section.offsetHeight;
+    let p=1-(rect.bottom/(h+window.innerHeight)); p=Math.max(0,Math.min(1,p));
+    const y=p*1100;
+    floor.style.backgroundPositionY=y+'px';
+    ceiling.style.backgroundPositionY=-y+'px';
+  }
+  function loop(){
+    const cur=window.scrollY||0;
+    vel += ((cur-lastY)-vel)*0.3; lastY=cur;
+    // 화면에 보일 때만 왜곡 계산
+    const rect=section.getBoundingClientRect();
+    const visible = rect.bottom>0 && rect.top<window.innerHeight;
+    if(visible && !reduce){
+      const w=Math.min(0.5, Math.abs(vel)/55);   // 0~0.5 정규화
+      section.style.setProperty('--warp', w.toFixed(3));
+      if(scene){ scene.style.filter=`brightness(${(1+w*0.5).toFixed(3)}) contrast(${(1+w*0.4).toFixed(3)})`; }
+      parallax();
+    }
+    requestAnimationFrame(loop);
+  }
+  parallax(); loop();
+})();
+
+/* ---------- init ---------- */
+applyMute();
+applyLang();
+</script>
+</body>
+</html>
