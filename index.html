@@ -658,9 +658,9 @@ function buildPhotos(){
   const ft=new THREE.CanvasTexture(fc); ft.encoding=THREE.sRGBEncoding; ft.anisotropy=4;
   function drawFloor(){
     fx.clearRect(0,0,1280,300); fx.textAlign='center'; fx.textBaseline='middle';
-    fx.shadowColor='rgba(255,216,74,0.9)'; fx.shadowBlur=32; fx.fillStyle='#ffd84a';
+    fx.shadowColor='rgba(255,40,55,0.95)'; fx.shadowBlur=32; fx.fillStyle='#ff3340';
     fx.font='78px "Press Start 2P",monospace'; fx.fillText('COMING SOON', 640, 120);
-    fx.shadowBlur=10; fx.fillStyle='rgba(255,216,74,0.7)'; fx.font='34px "Galmuri11","Noto Sans KR",sans-serif';
+    fx.shadowBlur=10; fx.fillStyle='rgba(255,90,100,0.8)'; fx.font='34px "Galmuri11","Noto Sans KR",sans-serif';
     fx.fillText('곧 공개', 640, 220); fx.shadowBlur=0; ft.needsUpdate=true;
   }
   drawFloor(); if(document.fonts){ try{ document.fonts.ready.then(drawFloor); }catch(e){} }
