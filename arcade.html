@@ -322,6 +322,18 @@
   .cap{ font-family:'Press Start 2P',monospace; font-size:8px; color:var(--yellow);
     border:1px solid rgba(255,216,74,.45); border-radius:4px; padding:4px 6px; background:rgba(255,216,74,.06); margin:0 2px; }
 
+  /* ── 게임 설명 카드 ── */
+  .game-list{ position:relative; z-index:4; display:flex; flex-direction:column; gap:14px; max-width:620px; margin:0 auto; }
+  .ginfo{ --c:#ff3cb4; background:rgba(12,7,22,.82); border:1px solid color-mix(in srgb, var(--c) 30%, transparent);
+    border-radius:12px; padding:18px 20px; transition:border-color .25s, box-shadow .25s; }
+  .ginfo:hover{ border-color:var(--c); box-shadow:0 0 22px color-mix(in srgb, var(--c) 30%, transparent); }
+  .ginfo-tag{ font-family:'VT323',monospace; font-size:15px; letter-spacing:1px; color:var(--yellow); }
+  .ginfo-title{ font-family:'Press Start 2P',monospace; font-size:clamp(11px,2.8vw,15px); color:#fff; margin:9px 0 11px; line-height:1.5; text-shadow:2px 2px 0 var(--c); }
+  .ginfo-desc{ font-size:13.5px; line-height:1.8; color:rgba(255,255,255,.74); }
+  .ginfo-link{ display:inline-block; margin-top:13px; font-family:'Press Start 2P',monospace; font-size:9px; letter-spacing:1px;
+    color:var(--c); text-decoration:none; }
+  .ginfo-link:hover{ color:#fff; }
+
   /* ── 푸터 / 소셜 ── */
   .footer{ width:100%; max-width:1000px; margin:0 auto; padding:30px clamp(12px,3vw,24px) 44px; }
   .foot-eyebrow{ text-align:center; font-family:'Press Start 2P',monospace; font-size:8px;
@@ -459,21 +471,7 @@
   <div class="screen">
     <div class="crt">
       <div class="glare"></div>
-      <div class="select-head">
-        <div class="eyebrow" id="eyebrow">PUSH ◂ ▸ · ENTER TO PLAY</div>
-        <h2 class="select-title"><span class="arr">▸</span> <span id="selTitle">SELECT YOUR GAME</span> <span class="arr">◂</span></h2>
-      </div>
-      <div class="rack" id="rack"></div>
-      <div class="info">
-        <div class="info-tag" id="infoTag"></div>
-        <div class="info-title" id="infoTitle"></div>
-        <p class="info-desc" id="infoDesc"></p>
-        <div class="play-row">
-          <a class="play-btn" id="playBtn" href="#"><span>▶</span> <span id="playLabel">PLAY</span></a>
-          <span class="coin-hint" id="coinHint">INSERT COIN</span>
-        </div>
-      </div>
-      <div class="ctl-hint" id="ctlHint"></div>
+      <div class="game-list" id="gameList"></div>
     </div>
   </div>
 </div>
@@ -551,8 +549,8 @@ const UI = {
   ko:{
     select:'게임을 고르세요', play:'플레이', open:'열기', coin:'INSERT COIN',
     eyebrow:'◂ ▸ 선택 · ENTER 실행', foot:'▸ 시아 팔로우', next:'EN',
-    warn:'▲ 하꼬 스트리머의 백룸 탈출기', heroCta:'▼ 게임 고르기', pressHint:'스크롤해서 게임 선택',
-    arcadeEyebrow:'▸ INSERT COIN', arcadeKicker:'어떤 방으로 들어갈래?',
+    warn:'▲ 하꼬 스트리머의 백룸 탈출기', heroCta:'▼ 게임 보기', pressHint:'스크롤해서 게임 소개 보기',
+    arcadeEyebrow:'▸ GAME LINEUP', arcadeKicker:'시아의 게임들',
     corridorSub:'흰 벽 · 누런 형광등 · 출구 없음',
     titleLines:['구독자님,','저기로 갈까요?'],
     ctl:'<span class="cap">◂</span><span class="cap">▸</span> 선택 · <span class="cap">ENTER</span> 실행 · <span class="cap">1</span>–<span class="cap">3</span> 바로가기 · 📱 탭'
@@ -560,8 +558,8 @@ const UI = {
   en:{
     select:'SELECT YOUR GAME', play:'PLAY', open:'OPEN', coin:'INSERT COIN',
     eyebrow:'PUSH ◂ ▸ · ENTER TO PLAY', foot:'▸ FOLLOW SIA', next:'KR',
-    warn:"▲ A SMALL STREAMER'S BACKROOMS RUN", heroCta:'▼ PICK A GAME', pressHint:'SCROLL TO SELECT',
-    arcadeEyebrow:'▸ INSERT COIN', arcadeKicker:'WHICH ROOM WILL YOU ENTER?',
+    warn:"▲ A SMALL STREAMER'S BACKROOMS RUN", heroCta:'▼ SEE GAMES', pressHint:'SCROLL DOWN',
+    arcadeEyebrow:'▸ GAME LINEUP', arcadeKicker:"SIA'S GAMES",
     corridorSub:'WHITE WALLS · YELLOW LIGHT · NO EXIT',
     titleLines:['Shall we go','over there?'],
     ctl:'<span class="cap">◂</span><span class="cap">▸</span> SELECT · <span class="cap">ENTER</span> PLAY · <span class="cap">1</span>–<span class="cap">3</span> JUMP · 📱 TAP'
@@ -588,61 +586,20 @@ const sfxMove =()=>tone(660,0.05,'square',0.1);
 const sfxPick =()=>{ tone(988,0.06,'square',0.14); setTimeout(()=>tone(1319,0.12,'square',0.14),70); };
 const sfxCoin =()=>{ tone(988,0.07,'square',0.16); setTimeout(()=>tone(1319,0.16,'square',0.16),85); };
 
-/* ---------- 카트리지 렌더 ---------- */
-const rack = document.getElementById('rack');
-function buildRack(){
-  rack.innerHTML='';
-  GAMES.forEach((g,i)=>{
-    const el=document.createElement('div');
-    el.className='cart'+(i===sel?' sel':'');
-    el.style.setProperty('--c', g.color);
-    el.tabIndex=0;
-    el.innerHTML=`
-      <span class="cart-status ${STATUS_CLASS[g.status]}">${STATUS_LABEL[g.status][lang]}</span>
-      <div class="cart-art"><div class="gridfx"></div><span class="cart-emoji">${g.emoji}</span></div>
-      <div class="cart-name">${g.name[lang]}</div>
-      <div class="cart-tag">${g.tag[lang]}</div>
-      <div class="cart-glare"></div>`;
-    el.addEventListener('click',()=>{ if(i===sel){ launch(); } else { select(i,true); } });
-    el.addEventListener('mouseenter',()=>{ if(i!==sel) select(i,true); });
-    // 3D 틸트 + 글레어
-    const glare=el.querySelector('.cart-glare');
-    el.addEventListener('mousemove',e=>{
-      const r=el.getBoundingClientRect();
-      const dx=(e.clientX-(r.left+r.width/2))/(r.width/2);
-      const dy=(e.clientY-(r.top+r.height/2))/(r.height/2);
-      el.style.transition='transform .05s linear, border-color .2s, box-shadow .25s, filter .25s';
-      el.style.transform=`perspective(680px) rotateX(${(-dy*9).toFixed(2)}deg) rotateY(${(dx*12).toFixed(2)}deg) scale(1.06) translateY(-9px)`;
-      glare.style.opacity='1';
-      glare.style.background=`radial-gradient(circle at ${((dx+1)/2*100).toFixed(0)}% ${((dy+1)/2*100).toFixed(0)}%, color-mix(in srgb, var(--c) 38%, transparent) 0%, transparent 62%)`;
-    });
-    el.addEventListener('mouseleave',()=>{
-      el.style.transition='transform .4s ease, border-color .2s, box-shadow .25s, filter .25s';
-      el.style.transform=''; glare.style.opacity='0';
-    });
-    rack.appendChild(el);
+/* ---------- 게임 설명 목록 ---------- */
+function buildGameList(){
+  const el=document.getElementById('gameList'); if(!el) return; el.innerHTML='';
+  const u=UI[lang];
+  GAMES.forEach(g=>{
+    const ext = g.status==='live';
+    const card=document.createElement('div'); card.className='ginfo'; card.style.setProperty('--c', g.color);
+    card.innerHTML=`
+      <div class="ginfo-tag">▸ ${g.tag[lang]} · ${STATUS_LABEL[g.status][lang]}</div>
+      <h3 class="ginfo-title">${g.name[lang]}</h3>
+      <p class="ginfo-desc">${g.desc[lang]}</p>
+      <a class="ginfo-link" href="${g.url}"${ext?' target="_blank" rel="noopener"':''}>▶ ${ext?u.open:u.play} →</a>`;
+    el.appendChild(card);
   });
-}
-function updateInfo(){
-  const g=GAMES[sel], u=UI[lang];
-  document.getElementById('infoTag').textContent='▸ '+g.tag[lang];
-  document.getElementById('infoTitle').textContent=g.name[lang];
-  document.getElementById('infoDesc').textContent=g.desc[lang];
-  const btn=document.getElementById('playBtn');
-  btn.href=g.url;
-  if(g.status==='live') btn.target='_blank'; else btn.removeAttribute('target');
-  document.getElementById('playLabel').textContent = g.status==='live' ? u.open : u.play;
-}
-function select(i,sound){
-  sel=(i+GAMES.length)%GAMES.length;
-  document.querySelectorAll('.cart').forEach((c,idx)=>c.classList.toggle('sel',idx===sel));
-  updateInfo();
-  if(sound){ initAudio(); sfxMove(); }
-}
-function launch(){
-  const g=GAMES[sel];
-  initAudio(); sfxPick(); flashCredit();
-  setTimeout(()=>{ if(g.status==='live') window.open(g.url,'_blank'); else window.location.href=g.url; }, 180);
 }
 let creditN=1;
 function flashCredit(){ creditN=Math.min(99,creditN+1); document.getElementById('credit').textContent=String(creditN).padStart(2,'0'); }
@@ -670,18 +627,14 @@ function applyLang(){
   const u=UI[lang];
   document.documentElement.lang=lang;
   document.getElementById('langBtn').textContent=u.next;
-  document.getElementById('selTitle').textContent=u.select;
-  document.getElementById('eyebrow').textContent=u.eyebrow;
-  document.getElementById('coinHint').textContent=u.coin;
   document.getElementById('footEyebrow').textContent=u.foot;
-  document.getElementById('ctlHint').innerHTML=u.ctl;
   document.getElementById('warnBadge').textContent=u.warn;
   document.getElementById('heroCta').textContent=u.heroCta;
   document.getElementById('pressHint').textContent=u.pressHint;
   document.getElementById('arcadeEyebrow').textContent=u.arcadeEyebrow;
   document.getElementById('arcadeKicker').textContent=u.arcadeKicker;
   document.getElementById('corridorSub').textContent=u.corridorSub;
-  buildRack(); updateInfo(); typeTitle();
+  buildGameList(); typeTitle();
 }
 document.getElementById('langBtn').onclick=()=>{
   lang=(lang==='ko')?'en':'ko'; localStorage.setItem('sia_arcade_lang',lang); applyLang();
@@ -694,18 +647,8 @@ document.getElementById('sndBtn').onclick=()=>{ muted=!muted; localStorage.setIt
 /* ---------- 코인 ---------- */
 document.getElementById('creditBox').onclick=()=>{ initAudio(); sfxCoin(); flashCredit(); };
 
-/* ---------- 키보드 (아케이드가 보일 때만) ---------- */
-window.addEventListener('keydown',e=>{
-  const arcadeTop=document.getElementById('arcade').getBoundingClientRect().top;
-  const arcadeVisible = arcadeTop < window.innerHeight*0.7;
-  if(e.code==='ArrowRight'||e.code==='KeyD'){ if(arcadeVisible){ e.preventDefault(); select(sel+1,true);} }
-  else if(e.code==='ArrowLeft'||e.code==='KeyA'){ if(arcadeVisible){ e.preventDefault(); select(sel-1,true);} }
-  else if(e.code==='Enter'){ if(arcadeVisible){ e.preventDefault(); launch(); } }
-  else if(/^Digit[1-9]$/.test(e.code)){ const n=+e.code.slice(5)-1; if(n<GAMES.length){ document.getElementById('arcade').scrollIntoView({behavior:'smooth'}); select(n,true);} }
-});
-
-/* ---------- play 버튼 sfx ---------- */
-document.getElementById('playBtn').addEventListener('click',()=>{ initAudio(); sfxPick(); flashCredit(); });
+/* ---------- 게임 링크 클릭 sfx ---------- */
+document.getElementById('gameList').addEventListener('click', e=>{ if(e.target.closest('.ginfo-link')){ initAudio(); sfxPick(); flashCredit(); } });
 document.getElementById('heroCta').addEventListener('click',()=>{ initAudio(); sfxMove(); });
 
 /* ---------- 캐릭터 이미지 폴백 ---------- */
