@@ -288,6 +288,7 @@
 <div class="loading" id="loading">LOADING THE BACKROOMS…</div>
 
 <script src="vendor/three.min.js"></script>
+<script src="vendor/cannon.min.js"></script>
 <script src="tex-data.js"></script>
 <script src="tarot-data.js"></script>
 <script>
@@ -334,6 +335,7 @@ let lang = localStorage.getItem('sia_b3_lang') || ((navigator.language||'en').to
 
 let renderer, scene, camera, clock, raycaster;
 const collBoxes=[]; const frameMeshes=[]; const flickers=[];
+let world=null, playerBody=null; const chairs=[];
 let state='start', target=null, targetIdx=-1, cur=0, currentKind=null;
 let yaw=0, pitch=0, locked=false;
 const keys={};
@@ -355,7 +357,7 @@ function init(){
   camera=new THREE.PerspectiveCamera(72, innerWidth/innerHeight, 0.1, 200);
   camera.position.set(0, EYE, 8);
 
-  buildRoom(); buildGuide(); buildPhotos(); buildSocial(); buildTarot(); buildDash(); setupInput();
+  buildRoom(); buildPhysics(); buildGuide(); buildPhotos(); buildSocial(); buildTarot(); buildDash(); setupInput();
   addEventListener('resize', onResize);
   document.getElementById('loading').classList.add('hidden');
   animate();
@@ -441,6 +443,50 @@ function buildSocial(){
   const sign=new THREE.Mesh(new THREE.PlaneGeometry(W,H), new THREE.MeshBasicMaterial({map:tex, transparent:true, toneMapped:false}));
   sign.position.z=0.012; sign.userData.kind='social'; grp.add(sign); frameMeshes.push(sign);
   const gl=new THREE.PointLight(0x66c8ff,0.8,9,1.6); gl.position.set(0,2.8,12-2.4); scene.add(gl);
+}
+function makeChairMesh(){
+  const g=new THREE.Group();
+  const seatMat=new THREE.MeshStandardMaterial({color:0x2b2620, roughness:.75, metalness:.15});
+  const metalMat=new THREE.MeshStandardMaterial({color:0x6b6b66, roughness:.45, metalness:.6});
+  const seat=new THREE.Mesh(new THREE.BoxGeometry(0.46,0.06,0.46), seatMat); seat.position.y=0.0; g.add(seat);
+  const back=new THREE.Mesh(new THREE.BoxGeometry(0.46,0.5,0.06), seatMat); back.position.set(0,0.27,-0.2); g.add(back);
+  const legGeo=new THREE.BoxGeometry(0.06,0.46,0.06);
+  [[-0.18,-0.18],[0.18,-0.18],[-0.18,0.18],[0.18,0.18]].forEach(p=>{ const l=new THREE.Mesh(legGeo,metalMat); l.position.set(p[0],-0.25,p[1]); g.add(l); });
+  return g;
+}
+function buildPhysics(){
+  if(!window.CANNON){ return; }
+  world=new CANNON.World(); world.gravity.set(0,-9.82,0);
+  world.broadphase=new CANNON.NaiveBroadphase(); world.solver.iterations=8;
+  const def=new CANNON.Material('def');
+  world.addContactMaterial(new CANNON.ContactMaterial(def,def,{friction:0.45, restitution:0.05}));
+  // 바닥
+  const ground=new CANNON.Body({mass:0, material:def}); ground.addShape(new CANNON.Plane());
+  ground.quaternion.setFromAxisAngle(new CANNON.Vec3(1,0,0), -Math.PI/2); world.addBody(ground);
+  // 벽(collBoxes → 정적 박스)
+  collBoxes.forEach(b=>{ const hx=(b.maxX-b.minX)/2, hz=(b.maxZ-b.minZ)/2;
+    const body=new CANNON.Body({mass:0, material:def}); body.addShape(new CANNON.Box(new CANNON.Vec3(hx, WALL_H/2, hz)));
+    body.position.set((b.minX+b.maxX)/2, WALL_H/2, (b.minZ+b.maxZ)/2); world.addBody(body); });
+  // 플레이어(키네마틱 구체 — 의자를 밀침)
+  playerBody=new CANNON.Body({mass:0, type:CANNON.Body.KINEMATIC, material:def}); playerBody.addShape(new CANNON.Sphere(0.55));
+  playerBody.position.set(0,1.0,8); world.addBody(playerBody);
+  // 의자 랜덤 배치
+  const spots=[]; let tries=0;
+  while(spots.length<6 && tries<300){ tries++;
+    const x=(Math.random()*2-1)*(HALF-2.5), z=(Math.random()*2-1)*(HALF-2.5);
+    if(blocked(x,z)) continue;
+    if(Math.hypot(x,z-8)<3.5) continue;
+    if(spots.some(s=>Math.hypot(s.x-x,s.z-z)<2.2)) continue;
+    spots.push({x,z});
+  }
+  spots.forEach(s=>{
+    const mesh=makeChairMesh(); scene.add(mesh);
+    const body=new CANNON.Body({mass:4, material:def}); body.addShape(new CANNON.Box(new CANNON.Vec3(0.26,0.5,0.26)));
+    body.position.set(s.x,0.55,s.z); body.linearDamping=0.25; body.angularDamping=0.45;
+    body.quaternion.setFromAxisAngle(new CANNON.Vec3(0,1,0), Math.random()*Math.PI*2);
+    world.addBody(body); chairs.push({mesh, body});
+    mesh.position.copy(body.position); mesh.quaternion.copy(body.quaternion);
+  });
 }
 function buildGuide(){
   // 정면 칸막이 벽 = CRT 단말기 (LEVEL 0 readout) — 조작법 튜토리얼
@@ -705,6 +751,12 @@ function animate(){
     else { target=null; targetIdx=-1; currentKind=null; document.getElementById('hint').classList.remove('show'); document.getElementById('reticle').classList.remove('active'); }
     document.getElementById('reticle').classList.add('show');
   } else { document.getElementById('reticle').classList.remove('show'); document.getElementById('hint').classList.remove('show'); }
+  // 물리 (의자) — 플레이어가 밀침
+  if(world){
+    if(playerBody) playerBody.position.set(camera.position.x, 1.0, camera.position.z);
+    world.step(1/60, dt, 3);
+    for(const c of chairs){ c.mesh.position.copy(c.body.position); c.mesh.quaternion.copy(c.body.quaternion); }
+  }
   // 죽어가는 형광등 깜빡임
   if(flickers.length){ const t=performance.now()*0.001;
     flickers.forEach((fl,i)=>{ const r=Math.sin(t*13+i*5)*Math.sin(t*7+i*2); let f=1; if(r>0.62) f=0.16; else if(r>0.42) f=0.6;
