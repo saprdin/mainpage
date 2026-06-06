@@ -1,6 +1,7 @@
 .git
 .gitignore
 .claude
+.wrangler
 .assetsignore
 node_modules
 *.md
