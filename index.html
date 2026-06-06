@@ -291,6 +291,7 @@
 <script src="vendor/cannon.min.js"></script>
 <script src="tex-data.js"></script>
 <script src="tarot-data.js"></script>
+<script src="mv-data.js"></script>
 <script>
 /* =========================================================================
    SIA.SYS — THE BACKROOMS 3D · 워킹 + 액자 갤러리
@@ -490,21 +491,31 @@ function buildPhysics(){
   });
 }
 function buildMV(){
-  // 사진 더미 옆 — 뮤직비디오 링크 포스터
-  const cw=768, ch=512; const c=document.createElement('canvas'); c.width=cw; c.height=ch; const x=c.getContext('2d');
+  // 사진 더미 옆 — 뮤직비디오 링크 포스터 (실사 이미지 + 재생 오버레이)
+  const cw=1024, ch=576; const c=document.createElement('canvas'); c.width=cw; c.height=ch; const x=c.getContext('2d');
   const tex=new THREE.CanvasTexture(c); tex.encoding=THREE.sRGBEncoding; tex.anisotropy=4;
   const PX='"Press Start 2P",monospace', KR='"Galmuri11","Noto Sans KR",sans-serif';
+  const img=new Image(); let imgOK=false; img.onload=function(){ imgOK=true; draw(); }; img.onerror=draw;
+  if(window.MV&&window.MV.sia) img.src=window.MV.sia;
   function draw(){
-    const g=x.createLinearGradient(0,0,0,ch); g.addColorStop(0,'#1c0a18'); g.addColorStop(.6,'#2c0f24'); g.addColorStop(1,'#0c0610'); x.fillStyle=g; x.fillRect(0,0,cw,ch);
+    // 배경 이미지 (cover)
+    if(imgOK){ const ir=img.width/img.height, cr=cw/ch; let dw,dh,dx,dy; if(ir>cr){ dh=ch; dw=ch*ir; } else { dw=cw; dh=cw/ir; } dx=(cw-dw)/2; dy=(ch-dh)/2; x.drawImage(img,dx,dy,dw,dh); }
+    else { const g=x.createLinearGradient(0,0,0,ch); g.addColorStop(0,'#1c0a18'); g.addColorStop(1,'#0c0610'); x.fillStyle=g; x.fillRect(0,0,cw,ch); }
+    // 상·하단 어둡게 (글자 가독성)
+    const tg=x.createLinearGradient(0,0,0,ch*0.4); tg.addColorStop(0,'rgba(8,4,12,0.78)'); tg.addColorStop(1,'rgba(8,4,12,0)'); x.fillStyle=tg; x.fillRect(0,0,cw,ch*0.4);
+    const bg=x.createLinearGradient(0,ch*0.55,0,ch); bg.addColorStop(0,'rgba(8,4,12,0)'); bg.addColorStop(1,'rgba(8,4,12,0.88)'); x.fillStyle=bg; x.fillRect(0,ch*0.55,cw,ch*0.45);
     x.textBaseline='top'; x.textAlign='left';
-    x.shadowColor='rgba(255,40,70,0.75)'; x.shadowBlur=16; x.fillStyle='#ff5d7a'; x.font='26px '+PX; x.fillText('MUSIC VIDEO', 40, 40);
-    x.shadowBlur=8; x.fillStyle='rgba(255,220,230,0.75)'; x.font='28px '+KR; x.fillText('시아 뮤직비디오', 40, 86);
-    // 빨간 재생 버튼
-    x.shadowColor='rgba(255,0,50,0.75)'; x.shadowBlur=34; x.fillStyle='#ff0033'; x.beginPath(); x.arc(cw/2, ch*0.52, 80, 0, Math.PI*2); x.fill();
-    x.shadowBlur=0; x.fillStyle='#fff'; x.beginPath(); x.moveTo(cw/2-26, ch*0.52-42); x.lineTo(cw/2-26, ch*0.52+42); x.lineTo(cw/2+46, ch*0.52); x.closePath(); x.fill();
-    x.textAlign='center'; x.shadowColor='rgba(255,40,70,0.6)'; x.shadowBlur=12; x.fillStyle='#ff5d7a'; x.font='20px '+PX; x.fillText('WATCH ON YOUTUBE', cw/2, ch-72);
+    // 상단 라벨
+    x.shadowColor='rgba(255,40,70,0.85)'; x.shadowBlur=18; x.fillStyle='#ff5d7a'; x.font='28px '+PX; x.fillText('MUSIC VIDEO', 44, 40);
+    x.shadowBlur=8; x.fillStyle='rgba(255,225,235,0.92)'; x.font='30px '+KR; x.fillText('시아 뮤직비디오', 44, 92);
+    // 중앙 재생 버튼
+    x.shadowColor='rgba(255,0,50,0.85)'; x.shadowBlur=40; x.fillStyle='#ff0033'; x.beginPath(); x.arc(cw/2, ch*0.5, 74, 0, Math.PI*2); x.fill();
+    x.shadowBlur=0; x.fillStyle='#fff'; x.beginPath(); x.moveTo(cw/2-24, ch*0.5-40); x.lineTo(cw/2-24, ch*0.5+40); x.lineTo(cw/2+44, ch*0.5); x.closePath(); x.fill();
+    // 하단 CTA
+    x.textAlign='center'; x.shadowColor='rgba(255,40,70,0.7)'; x.shadowBlur=14; x.fillStyle='#ffd0da'; x.font='22px '+PX; x.fillText('WATCH ON YOUTUBE', cw/2, ch-64);
     x.textAlign='left'; x.shadowBlur=0;
-    x.globalAlpha=0.28; x.fillStyle='#000'; for(let yL=0;yL<ch;yL+=3) x.fillRect(0,yL,cw,1); x.globalAlpha=1;
+    // 스캔라인
+    x.globalAlpha=0.2; x.fillStyle='#000'; for(let yL=0;yL<ch;yL+=3) x.fillRect(0,yL,cw,1); x.globalAlpha=1;
     tex.needsUpdate=true;
   }
   draw(); if(document.fonts){ try{ document.fonts.ready.then(draw); }catch(e){} }
