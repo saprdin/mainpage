@@ -167,6 +167,13 @@
   .mE:active{ background:rgba(255,216,74,.25); }
   .mhint{ position:fixed; bottom:8px; left:50%; transform:translateX(-50%); z-index:24; pointer-events:none;
     font-family:'VT323',monospace; font-size:13px; letter-spacing:.1em; color:rgba(255,216,74,.45); white-space:nowrap; }
+  /* COMING SOON 토스트 */
+  .toast{ position:fixed; left:50%; bottom:20%; transform:translate(-50%,14px); z-index:80; pointer-events:none;
+    font-family:'Press Start 2P','Galmuri11',monospace; font-size:13px; letter-spacing:1px; color:var(--neon);
+    background:rgba(20,15,6,.92); border:1px solid rgba(255,216,74,.5); border-radius:10px; padding:14px 22px;
+    text-shadow:0 0 12px rgba(255,216,74,.6); box-shadow:0 0 30px rgba(255,216,74,.25);
+    opacity:0; transition:opacity .3s, transform .3s; }
+  .toast.show{ opacity:1; transform:translate(-50%,0); }
 </style>
 </head>
 <body>
@@ -275,6 +282,8 @@
     </nav>
   </div>
 </div>
+
+<div class="toast" id="toast">COMING SOON</div>
 
 <div class="loading" id="loading">LOADING THE BACKROOMS…</div>
 
@@ -595,7 +604,7 @@ function setupInput(){
   document.getElementById('lbPrev').addEventListener('click', ()=>openLB(cur-1));
   document.getElementById('lbNext').addEventListener('click', ()=>openLB(cur+1));
   document.getElementById('lb').addEventListener('click', e=>{ if(e.target.id==='lb') closeModals(); });
-  document.getElementById('openBtn').addEventListener('click', ()=>{ if(GAME.external) window.open(GAME.url,'_blank'); else location.href=GAME.url; });
+  document.getElementById('openBtn').addEventListener('click', ()=>{ showToast(lang==='ko'?'곧 공개 · COMING SOON':'COMING SOON'); });
   // 연락처 모달
   document.getElementById('cClose').addEventListener('click', closeModals);
   document.getElementById('contact').addEventListener('click', e=>{ if(e.target.id==='contact') closeModals(); });
@@ -647,6 +656,8 @@ function openContact(){ if(state!=='modal'){ state='modal'; if(document.exitPoin
 function openProjects(){ if(state!=='modal'){ state='modal'; if(document.exitPointerLock) document.exitPointerLock(); }
   document.getElementById('projects').classList.add('open'); document.getElementById('hint').classList.remove('show'); }
 function closeModals(){ document.getElementById('lb').classList.remove('open'); document.getElementById('contact').classList.remove('open'); document.getElementById('projects').classList.remove('open'); state='paused'; }
+let toastT=null;
+function showToast(msg){ const t=document.getElementById('toast'); if(!t) return; t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1900); }
 
 function setupMagnetic(){ const mag=document.getElementById('mag'),btn=document.getElementById('openBtn'),lbl=document.getElementById('openLbl'); const S=0.4;
   mag.addEventListener('mousemove',e=>{ const r=btn.getBoundingClientRect(); const dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
