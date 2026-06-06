@@ -1,0 +1,6 @@
+.git
+.gitignore
+.claude
+.assetsignore
+node_modules
+*.md
