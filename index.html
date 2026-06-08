@@ -445,23 +445,6 @@
   <div class="scroll-cue">SCROLL ▼</div>
 </section>
 
-<!-- ② CORRIDOR (짧은 전환) -->
-<section id="corridor">
-  <div class="corridor-bg"></div>
-  <div class="corridor-scene">
-    <div class="corridor-floor" id="corridorFloor"></div>
-    <div class="corridor-ceiling" id="corridorCeiling"></div>
-  </div>
-  <div class="corridor-fog"></div>
-  <div class="corridor-edge-l"></div>
-  <div class="corridor-edge-r"></div>
-  <div class="corridor-content">
-    <div class="corridor-eyebrow">▸ LEVEL 0</div>
-    <div class="corridor-title">BACKROOMS</div>
-    <div class="corridor-sub" id="corridorSub">흰 벽 · 누런 형광등 · 출구 없음</div>
-  </div>
-</section>
-
 <!-- ④ FOOTER -->
 <footer class="footer">
   <div class="foot-eyebrow" id="footEyebrow">▸ FOLLOW SIA</div>
@@ -561,7 +544,6 @@ function applyLang(){
   document.getElementById('warnBadge').textContent=u.warn;
   document.getElementById('heroCta').textContent=u.heroCta;
   document.getElementById('pressHint').textContent=u.pressHint;
-  document.getElementById('corridorSub').textContent=u.corridorSub;
   typeTitle();
 }
 document.getElementById('langBtn').onclick=()=>{

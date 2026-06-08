@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SIA.SYS // LEVEL 37 — POOLROOMS</title>
+<meta name="description" content="더 깊은 백룸 — LEVEL 37 풀룸. 물에 잠긴 청록 타일의 방." />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css" rel="stylesheet">
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; overflow:hidden; background:#02110f; }
+  body{ font-family:'Noto Sans KR','Galmuri11',sans-serif; color:#eafffb; -webkit-tap-highlight-color:transparent; }
+  #app{ position:fixed; inset:0; }
+  canvas{ display:block; }
+
+  /* ── VHS / CRT 오버레이 (청록 톤) ── */
+  .grain,.scan,.vig{ position:fixed; inset:0; pointer-events:none; }
+  .grain{ z-index:30; opacity:.07; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation:grain .6s steps(1) infinite; }
+  @keyframes grain{ 0%{background-position:0 0} 50%{background-position:20px -14px} 100%{background-position:-12px 16px} }
+  .scan{ z-index:31; background:repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0,0,0,.16) 3px 4px); mix-blend-mode:multiply; }
+  .vig{ z-index:32; background:radial-gradient(ellipse at center, transparent 46%, rgba(0,12,10,.66) 100%); }
+
+  /* ── HUD ── */
+  .hud{ position:fixed; inset:0; z-index:40; pointer-events:none; }
+  .hud .tl{ position:absolute; top:14px; left:16px; }
+  .brand{ font-family:'Press Start 2P',monospace; font-size:13px; color:#2bffd0; text-shadow:0 0 10px rgba(43,255,208,.7); }
+  .brand .dim{ color:#7fd1c6; }
+  .sublabel{ font-family:'VT323',monospace; font-size:15px; color:rgba(190,255,245,.6); letter-spacing:1px; margin-top:4px; }
+  .tr{ position:absolute; top:14px; right:16px; display:flex; gap:8px; pointer-events:auto; }
+  .hbtn{ font-family:'Press Start 2P',monospace; font-size:9px; color:#eafffb; text-decoration:none;
+    background:rgba(8,40,36,.7); border:1px solid rgba(43,255,208,.45); border-radius:5px; padding:8px 9px; cursor:pointer; }
+  .hbtn:hover{ background:rgba(43,255,208,.18); }
+  .bc{ position:absolute; bottom:16px; left:50%; transform:translateX(-50%); text-align:center; width:100%; }
+  .ctl{ font-family:'VT323',monospace; font-size:15px; color:rgba(190,255,245,.55); letter-spacing:1px; }
+  .cap{ font-family:'Press Start 2P',monospace; font-size:8px; color:#2bffd0; border:1px solid rgba(43,255,208,.45);
+    border-radius:4px; padding:3px 5px; margin:0 2px; }
+
+  .reticle{ position:fixed; top:50%; left:50%; width:8px; height:8px; margin:-4px 0 0 -4px; border-radius:50%;
+    border:1px solid rgba(190,255,245,.5); z-index:38; opacity:0; transition:.2s; }
+  .reticle.show{ opacity:1; }
+  .reticle.active{ background:#2bffd0; box-shadow:0 0 12px #2bffd0; border-color:#2bffd0; transform:scale(1.4); }
+
+  .hint{ position:fixed; bottom:64px; left:50%; transform:translateX(-50%) translateY(10px); z-index:39;
+    display:flex; align-items:center; gap:10px; padding:9px 14px; opacity:0; transition:.18s;
+    background:rgba(4,22,20,.85); border:1px solid rgba(43,255,208,.5); border-radius:9px; }
+  .hint.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .hint .key{ font-family:'Press Start 2P',monospace; font-size:11px; color:#02110f; background:#2bffd0; border-radius:4px; padding:5px 7px; }
+  .hint .ht{ display:flex; flex-direction:column; line-height:1.3; }
+  .hint #hintName{ font-weight:700; font-size:13px; }
+  .hint small{ font-family:'VT323',monospace; font-size:13px; color:rgba(190,255,245,.7); }
+
+  /* ── 시작 화면 ── */
+  .screen{ position:fixed; inset:0; z-index:60; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:24px; cursor:pointer;
+    background:radial-gradient(ellipse at 50% 40%, rgba(8,60,54,.55), rgba(2,17,15,.96)); }
+  .screen.hidden{ display:none; }
+  .eyebrow{ font-family:'Press Start 2P',monospace; font-size:9px; color:rgba(43,255,208,.7); letter-spacing:3px; margin-bottom:18px; }
+  .screen h1{ font-family:'Press Start 2P',monospace; font-size:clamp(18px,5vw,34px); color:#eafffb; line-height:1.5;
+    text-shadow:0 0 18px rgba(43,255,208,.6); }
+  .screen h1 b{ color:#2bffd0; }
+  .sub{ font-family:'VT323',monospace; font-size:18px; color:rgba(190,255,245,.66); margin:18px 0 26px; max-width:460px; letter-spacing:.5px; }
+  .enter{ font-family:'Press Start 2P',monospace; font-size:12px; color:#02110f; background:#2bffd0; border-radius:6px;
+    padding:14px 22px; box-shadow:0 0 24px rgba(43,255,208,.6); animation:pls 1.5s ease-in-out infinite; }
+  @keyframes pls{ 0%,100%{transform:scale(1); box-shadow:0 0 18px rgba(43,255,208,.45)} 50%{transform:scale(1.04); box-shadow:0 0 32px rgba(43,255,208,.85)} }
+  .legend{ margin-top:22px; font-family:'VT323',monospace; font-size:15px; color:rgba(190,255,245,.5); line-height:1.7; }
+
+  /* ── 모바일 ── */
+  .touchui{ position:fixed; inset:0; z-index:45; pointer-events:none; display:none; }
+  .touchui.on{ display:block; }
+  .mjoy{ position:absolute; left:22px; bottom:22px; width:120px; height:120px; border-radius:50%;
+    background:rgba(8,40,36,.5); border:1px solid rgba(43,255,208,.4); pointer-events:auto; }
+  .mknob{ position:absolute; left:38px; top:38px; width:44px; height:44px; border-radius:50%;
+    background:rgba(43,255,208,.5); box-shadow:0 0 14px rgba(43,255,208,.6); }
+  .mE{ position:absolute; right:28px; bottom:46px; width:74px; height:74px; border-radius:50%; pointer-events:auto;
+    display:flex; align-items:center; justify-content:center; font-family:'Press Start 2P',monospace; font-size:18px; color:#02110f;
+    background:#2bffd0; box-shadow:0 0 18px rgba(43,255,208,.6); }
+  .mhint{ position:absolute; bottom:6px; left:50%; transform:translateX(-50%); font-family:'VT323',monospace; font-size:13px; color:rgba(190,255,245,.5); }
+
+  .loading{ position:fixed; inset:0; z-index:70; display:flex; align-items:center; justify-content:center;
+    font-family:'Press Start 2P',monospace; font-size:12px; color:#2bffd0; background:#02110f; letter-spacing:2px; }
+  .loading.hidden{ display:none; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="grain"></div>
+<div class="scan"></div>
+<div class="vig"></div>
+
+<div class="hud">
+  <div class="tl"><div class="brand">SIA<span class="dim">.SYS</span></div><div class="sublabel" id="sublabel">// LEVEL 37 — 풀룸</div></div>
+  <div class="tr"><a class="hbtn" href="index.html" id="hubBtn">← ARCADE</a><button class="hbtn" id="langBtn">EN</button></div>
+  <div class="bc"><div class="ctl" id="ctl"></div></div>
+</div>
+
+<div class="reticle" id="reticle"></div>
+
+<div class="touchui" id="touchui">
+  <div class="mjoy" id="mjoy"><div class="mknob" id="mknob"></div></div>
+  <div class="mE" id="mE">E</div>
+  <div class="mhint">왼쪽 = 이동 · 드래그 = 시선 · E = 확인</div>
+</div>
+<div class="hint" id="hint"><span class="key">E</span><span class="ht"><span id="hintName">—</span><small id="hintTag">enter</small></span></div>
+
+<div class="screen" id="startScreen">
+  <div class="eyebrow" id="scEyebrow">SIA.SYS // LEVEL 37</div>
+  <h1 id="scTitle">THE <b>POOLROOMS</b></h1>
+  <div class="sub" id="scSub">물에 잠긴 청록 타일의 방. 당신은 더 깊이 들어왔다.<br>돌아가려면 노란 문을 찾으세요.</div>
+  <div class="enter" id="scEnter">▸ 클릭하여 입장</div>
+  <div class="legend" id="scLegend"></div>
+</div>
+
+<div class="loading" id="loading">ENTERING LEVEL 37…</div>
+<div id="fade" style="position:fixed;inset:0;background:#000;opacity:1;pointer-events:none;transition:opacity 1s ease;z-index:3000;"></div>
+
+<script src="vendor/three.min.js"></script>
+<script>
+/* =========================================================================
+   SIA.SYS — LEVEL 37 · POOLROOMS (다음 백룸)
+   - Three.js 전역 빌드(vendor/three.min.js) → file:// 에서도 동작
+   - 자체 포인터락 FPS + 그리드 AABB 충돌 (backroom.html과 동일 패턴)
+   ========================================================================= */
+const HALF=16, WALL_H=5, R=0.6, EYE=2.0;
+const UI = {
+  ko:{ next:'EN', sublabel:'// LEVEL 37 — 풀룸', hub:'← ARCADE',
+    title:'THE <b>POOLROOMS</b>', sub:'물에 잠긴 청록 타일의 방. 당신은 더 깊이 들어왔다.<br>돌아가려면 노란 문을 찾으세요.',
+    enter:'▸ 클릭하여 입장', back:'LEVEL 0 · 돌아가기', backTag:'돌아가기',
+    legend:'<span class="cap">W A S D</span> 이동 · <span class="cap">MOUSE</span> 시선 · 노란 문 = LEVEL 0 복귀<br>📱 조이스틱 이동 · 드래그 시선',
+    ctl:'<span class="cap">W A S D</span> 이동 · <span class="cap">MOUSE</span> 시선 · <span class="cap">E</span> 확인' },
+  en:{ next:'KR', sublabel:'// LEVEL 37 — POOLROOMS', hub:'← ARCADE',
+    title:'THE <b>POOLROOMS</b>', sub:'A flooded room of cyan tiles. You went deeper.<br>Find the yellow door to go back.',
+    enter:'▸ CLICK TO ENTER', back:'LEVEL 0 · GO BACK', backTag:'go back',
+    legend:'<span class="cap">W A S D</span> MOVE · <span class="cap">MOUSE</span> LOOK · YELLOW DOOR = BACK TO LEVEL 0<br>📱 JOYSTICK MOVE · DRAG LOOK',
+    ctl:'<span class="cap">W A S D</span> MOVE · <span class="cap">MOUSE</span> LOOK · <span class="cap">E</span> USE' }
+};
+let lang = localStorage.getItem('sia_b3_lang') || ((navigator.language||'en').toLowerCase().startsWith('ko')?'ko':'en');
+
+let renderer, scene, camera, clock, raycaster;
+const collBoxes=[]; const frameMeshes=[];
+let waterTex=null, portalBack=null, portalLight=null, backActive=false;
+let state='start', target=null, currentKind=null;
+let yaw=0, pitch=0, locked=false;
+const keys={};
+const isTouch = matchMedia('(pointer:coarse)').matches || ('ontouchstart' in window);
+let tMoveX=0, tMoveZ=0;
+
+function makeTex(draw,rx,ry){ const c=document.createElement('canvas'); c.width=c.height=256; draw(c.getContext('2d'),256);
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(rx||1,ry||1); t.encoding=THREE.sRGBEncoding; t.anisotropy=4; return t; }
+
+function init(){
+  renderer=new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
+  renderer.setSize(innerWidth,innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
+  renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05;
+  document.getElementById('app').appendChild(renderer.domElement);
+
+  scene=new THREE.Scene(); scene.background=new THREE.Color(0x0a3a39); scene.fog=new THREE.FogExp2(0x0c4a47,0.034);
+  clock=new THREE.Clock(); raycaster=new THREE.Raycaster();
+  camera=new THREE.PerspectiveCamera(72, innerWidth/innerHeight, 0.1, 200);
+  camera.position.set(0, EYE, 13);
+
+  buildRoom(); buildSigns(); buildPortalBack(); setupInput(); applyLang();
+  addEventListener('resize', onResize);
+  document.getElementById('loading').classList.add('hidden');
+  // 입장 페이드 아웃
+  setTimeout(()=>{ const f=document.getElementById('fade'); if(f) f.style.opacity='0'; }, 60);
+  animate();
+  window.__p37={ frames:frameMeshes.length, walls:collBoxes.length, ready:true };
+}
+
+function addColl(cx,cz,sx,sz){ collBoxes.push({minX:cx-sx/2,maxX:cx+sx/2,minZ:cz-sz/2,maxZ:cz+sz/2}); }
+
+function buildRoom(){
+  // 청록 타일 벽
+  const tile=makeTex((x,s)=>{ x.fillStyle='#1d8f86'; x.fillRect(0,0,s,s);
+    const n=4, w=s/n;
+    for(let i=0;i<n;i++) for(let j=0;j<n;j++){ const sh=(Math.random()*0.16-0.05);
+      x.fillStyle=`rgba(${40+sh*120|0},${190+sh*120|0},${178+sh*120|0},1)`; x.fillRect(i*w+1.5,j*w+1.5,w-3,w-3); }
+    x.strokeStyle='rgba(8,40,38,.6)'; x.lineWidth=3; for(let i=0;i<=n;i++){ x.beginPath(); x.moveTo(i*w,0); x.lineTo(i*w,s); x.stroke(); x.beginPath(); x.moveTo(0,i*w); x.lineTo(s,i*w); x.stroke(); }
+    // 물때
+    for(let k=0;k<60;k++){ x.fillStyle='rgba(10,50,46,.12)'; x.fillRect(Math.random()*s, s*0.62+Math.random()*s*0.38, Math.random()*10+2, 2); }
+  },2,2);
+  function wallMat(len){ const t=tile.clone(); t.needsUpdate=true; t.repeat.set(Math.max(len,1)/4, WALL_H/4); return new THREE.MeshStandardMaterial({map:t, roughness:.7}); }
+  function wallSeg(x1,z1,x2,z2,th){ th=th||0.5; const cx=(x1+x2)/2, cz=(z1+z2)/2, len=Math.hypot(x2-x1,z2-z1);
+    const horiz=Math.abs(x2-x1)>=Math.abs(z2-z1); const sx=horiz?len+th:th, sz=horiz?th:len+th;
+    const m=new THREE.Mesh(new THREE.BoxGeometry(sx,WALL_H,sz), wallMat(Math.max(sx,sz))); m.position.set(cx,WALL_H/2,cz); scene.add(m); addColl(cx,cz,sx,sz); }
+  function pillar(px,pz){ const m=new THREE.Mesh(new THREE.BoxGeometry(1.2,WALL_H,1.2), wallMat(1.2)); m.position.set(px,WALL_H/2,pz); scene.add(m); addColl(px,pz,1.2,1.2); }
+
+  // 바닥(물 밑 타일)
+  const floorTex=makeTex((x,s)=>{ x.fillStyle='#12655f'; x.fillRect(0,0,s,s);
+    const n=4, w=s/n; x.strokeStyle='rgba(6,40,38,.7)'; x.lineWidth=2;
+    for(let i=0;i<=n;i++){ x.beginPath(); x.moveTo(i*w,0); x.lineTo(i*w,s); x.stroke(); x.beginPath(); x.moveTo(0,i*w); x.lineTo(s,i*w); x.stroke(); } },8,8);
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(HALF*2,HALF*2), new THREE.MeshStandardMaterial({map:floorTex, roughness:.5, metalness:.1}));
+  floor.rotation.x=-Math.PI/2; scene.add(floor);
+
+  // 물 표면(반투명 + 흐르는 코스틱)
+  waterTex=makeTex((x,s)=>{ x.clearRect(0,0,s,s);
+    for(let k=0;k<26;k++){ const cx=Math.random()*s, cy=Math.random()*s, r=10+Math.random()*26;
+      const g=x.createRadialGradient(cx,cy,0,cx,cy,r); g.addColorStop(0,'rgba(180,255,245,0.5)'); g.addColorStop(1,'rgba(180,255,245,0)');
+      x.fillStyle=g; x.beginPath(); x.arc(cx,cy,r,0,Math.PI*2); x.fill(); } },6,6);
+  const water=new THREE.Mesh(new THREE.PlaneGeometry(HALF*2,HALF*2),
+    new THREE.MeshBasicMaterial({map:waterTex, transparent:true, opacity:0.32, color:0x6effe6, toneMapped:false, depthWrite:false, blending:THREE.AdditiveBlending}));
+  water.rotation.x=-Math.PI/2; water.position.y=0.16; scene.add(water);
+
+  // 천장(밝은 청백)
+  const ceilTex=makeTex((x,s)=>{ x.fillStyle='#cfeeea'; x.fillRect(0,0,s,s); x.strokeStyle='rgba(40,90,86,.4)'; x.lineWidth=3; x.strokeRect(2,2,s-4,s-4); },8,8);
+  const ceil=new THREE.Mesh(new THREE.PlaneGeometry(HALF*2,HALF*2), new THREE.MeshStandardMaterial({map:ceilTex, roughness:1}));
+  ceil.rotation.x=Math.PI/2; ceil.position.y=WALL_H; scene.add(ceil);
+
+  // 외벽
+  wallSeg(-HALF,-HALF, HALF,-HALF); wallSeg(-HALF,HALF, HALF,HALF);
+  wallSeg(-HALF,-HALF, -HALF,HALF); wallSeg(HALF,-HALF, HALF,HALF);
+  // 내부 칸막이(풀룸 미로 느낌)
+  wallSeg(-6,-6, -6,6); wallSeg(6,-6, 6,6); wallSeg(-6,-6, 6,-6);
+  // 기둥 격자
+  [[-11,-11],[11,-11],[-11,11],[11,11],[0,-11],[-11,0],[11,0]].forEach(p=>pillar(p[0],p[1]));
+
+  // 조명(밝고 차가운 청록)
+  scene.add(new THREE.HemisphereLight(0xdaffff,0x0a3330,0.72));
+  scene.add(new THREE.AmbientLight(0xbafffa,0.42));
+  const panel=new THREE.MeshBasicMaterial({color:0xeafffb, toneMapped:false});
+  for(const gx of [-10,0,10]) for(const gz of [-10,0,10]){
+    const p=new THREE.Mesh(new THREE.PlaneGeometry(3.2,1.1), panel); p.rotation.x=Math.PI/2; p.position.set(gx,WALL_H-0.02,gz); scene.add(p);
+    const pl=new THREE.PointLight(0xcafff7, 0.85, 24, 1.6); pl.position.set(gx,WALL_H-0.6,gz); scene.add(pl);
+  }
+}
+
+function makeSignMesh(lines, w, h){
+  const cw=1024, ch=Math.round(1024*h/w); const c=document.createElement('canvas'); c.width=cw; c.height=ch; const x=c.getContext('2d');
+  const tex=new THREE.CanvasTexture(c); tex.encoding=THREE.sRGBEncoding; tex.anisotropy=4;
+  const PX='"Press Start 2P",monospace', KR='"Galmuri11","Noto Sans KR",sans-serif';
+  x.fillStyle='rgba(4,30,28,0.55)'; x.fillRect(30,30,cw-60,ch-60);
+  x.textAlign='center'; x.textBaseline='middle'; x.shadowColor='rgba(43,255,208,0.9)';
+  let yy=ch*0.30;
+  lines.forEach((ln,i)=>{ const kr=/[가-힣]/.test(ln.t); x.shadowBlur=i===0?24:12;
+    x.fillStyle=i===0?'#2bffd0':'#cdfff5'; x.font=(i===0?ln.s+'px '+PX:ln.s+'px '+(kr?KR:PX)); x.fillText(ln.t, cw/2, yy); yy+=ch*0.26; });
+  x.shadowBlur=0; tex.needsUpdate=true;
+  return new THREE.Mesh(new THREE.PlaneGeometry(w,h), new THREE.MeshBasicMaterial({map:tex, transparent:true, toneMapped:false}));
+}
+function buildSigns(){
+  // 스폰 정면(북쪽 외벽 근처) 레벨 표지
+  const sign=makeSignMesh([{t:'LEVEL 37',s:62},{t:'POOLROOMS · 풀룸',s:34}], 6.2, 2.6);
+  sign.position.set(0,2.7,-HALF+0.3); scene.add(sign);
+  const gl=new THREE.PointLight(0x2bffd0,0.7,12,1.6); gl.position.set(0,3,-HALF+2.4); scene.add(gl);
+}
+
+function buildPortalBack(){
+  // 노란 포털 — LEVEL 0(backroom.html)로 복귀. 왼쪽뒤 구석(서쪽 벽).
+  const PX=-HALF+0.4, PZ=-11;
+  const cw=512, ch=720; const c=document.createElement('canvas'); c.width=cw; c.height=ch; const x=c.getContext('2d');
+  const tex=new THREE.CanvasTexture(c); tex.encoding=THREE.sRGBEncoding; tex.anisotropy=4;
+  const F='"Press Start 2P",monospace', KR='"Galmuri11","Noto Sans KR",sans-serif';
+  const g=x.createRadialGradient(cw/2,ch/2,20,cw/2,ch/2,ch*0.6); g.addColorStop(0,'#2a2103'); g.addColorStop(.6,'#140f02'); g.addColorStop(1,'#070500'); x.fillStyle=g; x.fillRect(0,0,cw,ch);
+  x.strokeStyle='#ffd84a'; x.lineWidth=6; x.shadowColor='rgba(255,216,74,0.9)'; x.shadowBlur=34;
+  x.beginPath(); x.ellipse(cw/2,ch/2,cw*0.34,ch*0.40,0,0,Math.PI*2); x.stroke();
+  x.textAlign='center'; x.textBaseline='middle'; x.shadowBlur=22;
+  x.fillStyle='#ffe98a'; x.font='34px '+F; x.fillText('LEVEL 0', cw/2, ch*0.32);
+  x.shadowBlur=12; x.fillStyle='rgba(255,216,74,0.9)'; x.font='26px '+KR; x.fillText('돌아가기', cw/2, ch*0.68);
+  x.fillStyle='rgba(255,235,160,0.6)'; x.font='15px '+F; x.fillText('> BACK', cw/2, ch*0.77); tex.needsUpdate=true;
+
+  const grp=new THREE.Group(); grp.position.set(PX,2.4,PZ); grp.rotation.y=Math.PI/2; scene.add(grp); // +x(방 안쪽) 향함
+  grp.add(new THREE.Mesh(new THREE.BoxGeometry(2.7,4.0,0.25), new THREE.MeshStandardMaterial({color:0x18130a, roughness:.5, metalness:.4})));
+  const scr=new THREE.Mesh(new THREE.PlaneGeometry(2.3,3.5), new THREE.MeshBasicMaterial({map:tex, transparent:true, toneMapped:false}));
+  scr.position.z=0.14; scr.userData.kind='back'; scr.userData.label={ko:'LEVEL 0 · 돌아가기',en:'LEVEL 0 · GO BACK'};
+  grp.add(scr); frameMeshes.push(scr); portalBack=scr;
+  portalLight=new THREE.PointLight(0xffd84a, 1.3, 12, 1.8); portalLight.position.set(PX+1.2,2.2,PZ); scene.add(portalLight);
+}
+
+function backToLevel0(){ if(backActive) return; backActive=true;
+  try{ if(document.exitPointerLock) document.exitPointerLock(); }catch(e){}
+  const f=document.getElementById('fade'); if(f){ f.style.opacity='1'; f.style.pointerEvents='auto'; }
+  setTimeout(()=>{ location.href='backroom.html'; }, 850);
+}
+
+function setupInput(){
+  const cv=renderer.domElement;
+  document.getElementById('startScreen').addEventListener('click', requestPlay);
+  document.addEventListener('pointerlockchange', ()=>{ locked=(document.pointerLockElement===cv);
+    if(locked){ state='playing'; hideScreens(); } else if(state!=='modal'){ state='paused'; } });
+  document.addEventListener('mousemove', e=>{ if(state!=='playing'||!locked) return;
+    yaw-=e.movementX*0.0022; pitch-=e.movementY*0.0022; pitch=Math.max(-1.45,Math.min(1.45,pitch)); });
+  function interact(){ if(state!=='playing'||!target) return; if(currentKind==='back') backToLevel0(); }
+  cv.addEventListener('click', ()=>{ if(state==='playing') interact(); else if(state==='paused') requestPlay(); });
+  addEventListener('keydown', e=>{ keys[e.code]=true; if(e.code==='KeyE') interact(); });
+  addEventListener('keyup', e=>{ keys[e.code]=false; });
+  document.getElementById('langBtn').addEventListener('click', ()=>{ lang=lang==='ko'?'en':'ko'; localStorage.setItem('sia_b3_lang',lang); applyLang(); });
+
+  if(isTouch){
+    document.getElementById('touchui').classList.add('on');
+    const ctl=document.getElementById('ctl'); if(ctl) ctl.style.display='none';
+    const joy=document.getElementById('mjoy'), knob=document.getElementById('mknob'); let jid=null, jcx=0, jcy=0;
+    joy.addEventListener('touchstart', e=>{ e.preventDefault(); const t=e.changedTouches[0]; jid=t.identifier; const r=joy.getBoundingClientRect(); jcx=r.left+r.width/2; jcy=r.top+r.height/2; }, {passive:false});
+    joy.addEventListener('touchmove', e=>{ e.preventDefault(); for(const t of e.changedTouches){ if(t.identifier===jid){ let dx=t.clientX-jcx, dy=t.clientY-jcy; const m=Math.hypot(dx,dy), mx=48; if(m>mx){ dx*=mx/m; dy*=mx/m; } knob.style.transform=`translate(${dx}px,${dy}px)`; tMoveX=dx/mx; tMoveZ=-dy/mx; } } }, {passive:false});
+    const jend=e=>{ for(const t of e.changedTouches){ if(t.identifier===jid){ jid=null; tMoveX=0; tMoveZ=0; knob.style.transform=''; } } };
+    joy.addEventListener('touchend', jend); joy.addEventListener('touchcancel', jend);
+    let lid=null, lx=0, ly=0, moved=0;
+    cv.addEventListener('touchstart', e=>{ if(state==='paused'){ requestPlay(); return; } if(state!=='playing') return; const t=e.changedTouches[0]; lid=t.identifier; lx=t.clientX; ly=t.clientY; moved=0; }, {passive:true});
+    cv.addEventListener('touchmove', e=>{ if(state!=='playing') return; for(const t of e.changedTouches){ if(t.identifier===lid){ const ddx=t.clientX-lx, ddy=t.clientY-ly; moved+=Math.abs(ddx)+Math.abs(ddy); yaw-=ddx*0.005; pitch-=ddy*0.005; pitch=Math.max(-1.45,Math.min(1.45,pitch)); lx=t.clientX; ly=t.clientY; } } }, {passive:true});
+    cv.addEventListener('touchend', e=>{ for(const t of e.changedTouches){ if(t.identifier===lid){ lid=null; if(moved<10 && state==='playing' && target) interact(); } } });
+    const eb=document.getElementById('mE');
+    eb.addEventListener('touchstart', e=>{ e.preventDefault(); if(state==='playing') interact(); else if(state==='paused') requestPlay(); }, {passive:false});
+  }
+}
+function requestPlay(){ if(isTouch){ state='playing'; hideScreens(); } else { const cv=renderer.domElement; if(cv.requestPointerLock) cv.requestPointerLock(); } }
+function hideScreens(){ document.getElementById('startScreen').classList.add('hidden'); }
+function blocked(x,z){ for(const b of collBoxes){ if(x>b.minX-R&&x<b.maxX+R&&z>b.minZ-R&&z<b.maxZ+R) return true; } return false; }
+
+function applyLang(){ const u=UI[lang]; document.documentElement.lang=lang;
+  document.getElementById('langBtn').textContent=u.next;
+  document.getElementById('sublabel').textContent=u.sublabel;
+  document.getElementById('hubBtn').textContent=u.hub;
+  document.getElementById('ctl').innerHTML=u.ctl;
+  document.getElementById('scTitle').innerHTML=u.title;
+  document.getElementById('scSub').innerHTML=u.sub;
+  document.getElementById('scEnter').textContent=u.enter;
+  document.getElementById('scLegend').innerHTML=u.legend;
+}
+
+const vel=new THREE.Vector3();
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),0.05);
+  if(waterTex){ waterTex.offset.x=(performance.now()*0.000018)%1; waterTex.offset.y=(performance.now()*0.000026)%1; }
+  if(portalLight){ const tt=performance.now()*0.001; portalLight.intensity=1.2+Math.sin(tt*2.6)*0.6; }
+  if(state==='playing'){
+    camera.rotation.set(pitch,yaw,0,'YXZ');
+    let f=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)+tMoveZ;
+    let s=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+tMoveX;
+    f=Math.max(-1,Math.min(1,f)); s=Math.max(-1,Math.min(1,s));
+    const sinY=Math.sin(yaw), cosY=Math.cos(yaw);
+    const fx=-sinY, fz=-cosY, rx=cosY, rz=-sinY;
+    let mx=fx*f+rx*s, mz=fz*f+rz*s; const len=Math.hypot(mx,mz)||1; mx/=len; mz/=len;
+    const SP=5.0, acc=(f||s)?1:0;
+    vel.x+=( mx*SP*acc - vel.x)*Math.min(1,dt*10); vel.z+=( mz*SP*acc - vel.z)*Math.min(1,dt*10);
+    const px=camera.position.x, pz=camera.position.z;
+    let nx=px+vel.x*dt, nz=pz+vel.z*dt;
+    nx=Math.max(-HALF+R,Math.min(HALF-R,nx)); nz=Math.max(-HALF+R,Math.min(HALF-R,nz));
+    if(blocked(nx,pz)) nx=px; if(blocked(nx,nz)) nz=pz;
+    camera.position.x=nx; camera.position.z=nz; camera.position.y=EYE;
+
+    raycaster.setFromCamera({x:0,y:0}, camera);
+    const hit=raycaster.intersectObjects(frameMeshes,false);
+    if(hit.length && hit[0].distance<5.5){ const o=hit[0].object; target=o; currentKind=o.userData.kind||null;
+      const lb=o.userData.label; document.getElementById('hintName').textContent=(typeof lb==='object'?lb[lang]:lb)||'';
+      document.getElementById('hintTag').textContent=(lang==='ko'?UI[lang].backTag:UI[lang].backTag);
+      document.getElementById('hint').classList.add('show'); document.getElementById('reticle').classList.add('active'); }
+    else { target=null; currentKind=null; document.getElementById('hint').classList.remove('show'); document.getElementById('reticle').classList.remove('active'); }
+    document.getElementById('reticle').classList.add('show');
+    // 노란 포털 근접 시 자동 복귀
+    if(!backActive && camera.position.x<-14.2 && Math.abs(camera.position.z-(-11))<1.6) backToLevel0();
+  } else { document.getElementById('reticle').classList.remove('show'); document.getElementById('hint').classList.remove('show'); }
+  renderer.render(scene,camera);
+}
+function onResize(){ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); }
+
+if(!window.THREE){ document.getElementById('loading').innerHTML='<div style="color:#ff5a48">3D 엔진(vendor/three.min.js)을 찾지 못했어요.</div>'; }
+else { init(); }
+</script>
+</body>
+</html>
