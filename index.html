@@ -141,10 +141,8 @@
   }
   .main-title{
     font-family:'Noto Sans KR',sans-serif; font-weight:900;
-    font-size:clamp(32px,9.2vw,56px); line-height:1.18; letter-spacing:-.5px;
-    background:linear-gradient(176deg,#ffffff 0%, #ffd9ec 46%, #ff6cc0 100%);
-    -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent;
-    filter:drop-shadow(0 3px 22px rgba(255,60,180,.5));
+    font-size:clamp(32px,9.2vw,56px); line-height:1.18; letter-spacing:-.5px; color:#fff;
+    text-shadow:2px 2px 0 var(--pink), 4px 4px 0 #6a1240, 0 0 30px rgba(255,60,180,.45);
     margin-bottom:14px; min-height:2.4em;
   }
   .cursor{
@@ -389,7 +387,7 @@
 
   /* ② 히어로 타이틀 — 색수차 + 글리치 + 잔상 */
   .main-title{
-    animation:title-glitch 7s steps(1) infinite;
+    animation:title-chroma 3.2s ease-in-out infinite;
     will-change:transform;
   }
   @keyframes title-chroma{
