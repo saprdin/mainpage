@@ -85,7 +85,10 @@
   }
   .hero-bg{
     position:absolute; inset:0; z-index:0;
-    background:radial-gradient(ellipse at 50% 30%, #d4a847 0%, #8b6a1f 22%, #2a1d08 54%, #0a0612 100%);
+    background:
+      radial-gradient(120% 75% at 50% 2%, rgba(255,60,180,.20), transparent 44%),
+      radial-gradient(85% 55% at 82% 26%, rgba(120,80,255,.16), transparent 58%),
+      radial-gradient(ellipse at 50% 34%, #bc8f2e 0%, #67491580 24%, #20160380 56%, #0a0612 100%);
   }
   .hero-bg::before{
     content:''; position:absolute; inset:0;
@@ -123,19 +126,26 @@
   @keyframes float-char{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-13px)} }
 
   .hero-content{
-    position:relative; z-index:4; width:100%; max-width:480px;
-    padding:16px 28px 78px; text-align:center;
+    position:relative; z-index:4; width:calc(100% - 32px); max-width:500px;
+    margin:0 auto 46px; padding:30px 32px 30px; text-align:center;
+    background:linear-gradient(180deg, rgba(24,13,35,.46), rgba(10,6,18,.6));
+    border:1px solid rgba(255,255,255,.09); border-radius:22px;
+    -webkit-backdrop-filter:blur(16px) saturate(1.2); backdrop-filter:blur(16px) saturate(1.2);
+    box-shadow:0 24px 70px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.1);
   }
   .warn-badge{
     display:inline-block; font-family:'VT323',monospace; font-size:14px;
-    color:var(--yellow); border:1px dashed rgba(255,216,74,.42);
-    padding:3px 14px; margin-bottom:18px; letter-spacing:2px;
+    color:var(--yellow); background:rgba(255,216,74,.07);
+    border:1px solid rgba(255,216,74,.3); border-radius:999px;
+    padding:5px 16px; margin-bottom:20px; letter-spacing:2px;
   }
   .main-title{
     font-family:'Noto Sans KR',sans-serif; font-weight:900;
-    font-size:clamp(30px,9vw,54px); line-height:1.22; color:#fff;
-    text-shadow:2px 2px 0 var(--pink), 4px 4px 0 #6a1240, 0 0 30px rgba(255,60,180,.45);
-    margin-bottom:12px; min-height:2.5em;
+    font-size:clamp(32px,9.2vw,56px); line-height:1.18; letter-spacing:-.5px;
+    background:linear-gradient(176deg,#ffffff 0%, #ffd9ec 46%, #ff6cc0 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 3px 22px rgba(255,60,180,.5));
+    margin-bottom:14px; min-height:2.4em;
   }
   .cursor{
     display:inline-block; width:3px; height:1em; background:var(--pink);
@@ -144,19 +154,19 @@
   @keyframes cursor-blink{ 50%{opacity:0} }
   .sub-eng{
     font-family:'Press Start 2P',monospace; font-size:7px;
-    color:rgba(255,216,74,.6); letter-spacing:2px; margin-bottom:28px;
+    color:rgba(255,216,74,.55); letter-spacing:2.5px; margin-bottom:26px;
   }
   .hero-cta{
-    font-family:'Press Start 2P',monospace; font-size:13px; padding:15px 30px;
-    background:linear-gradient(180deg,var(--pink),#c41a86); color:#fff;
-    border:2px solid #fff; cursor:pointer; letter-spacing:2px; border-radius:4px;
-    text-shadow:1px 1px 0 rgba(0,0,0,.35);
-    box-shadow:0 0 0 2px var(--pink), 0 0 18px rgba(255,60,180,.6);
-    animation:btnglow 1.6s ease-in-out infinite; transition:transform .1s;
-    display:inline-block; margin:0 auto 14px; text-decoration:none;
+    font-family:'Press Start 2P',monospace; font-size:13px; padding:16px 34px;
+    background:linear-gradient(180deg,#ff5cc0,#c41a86); color:#fff;
+    border:2px solid rgba(255,255,255,.92); cursor:pointer; letter-spacing:2px; border-radius:9px;
+    text-shadow:1px 1px 0 rgba(0,0,0,.4);
+    box-shadow:0 6px 0 #7a0f4e, 0 12px 24px rgba(255,60,180,.4), inset 0 1px 0 rgba(255,255,255,.55);
+    transition:transform .08s ease, box-shadow .15s ease;
+    display:inline-block; margin:6px auto 16px; text-decoration:none;
   }
-  .hero-cta:hover{ transform:translateY(-2px) scale(1.04); }
-  .hero-cta:active{ transform:translateY(1px) scale(.98); }
+  .hero-cta:hover{ transform:translateY(-2px); box-shadow:0 8px 0 #7a0f4e, 0 16px 32px rgba(255,60,180,.6), inset 0 1px 0 rgba(255,255,255,.55); }
+  .hero-cta:active{ transform:translateY(4px); box-shadow:0 2px 0 #7a0f4e, 0 5px 14px rgba(255,60,180,.4), inset 0 1px 0 rgba(255,255,255,.55); }
   @keyframes btnglow{
     0%,100%{ box-shadow:0 0 0 2px var(--pink),0 0 12px rgba(255,60,180,.45);}
     50%{ box-shadow:0 0 0 2px var(--pink),0 0 30px rgba(255,60,180,.9);}
@@ -342,9 +352,10 @@
     color:rgba(255,60,180,.6); letter-spacing:3px; margin-bottom:18px; }
   .social-list{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; max-width:620px; margin:0 auto; }
   .slink{
-    display:flex; align-items:center; gap:12px; padding:13px 16px;
-    background:rgba(18,10,28,.88); border:1px solid rgba(255,60,180,.26);
-    color:#fff; text-decoration:none; border-radius:9px;
+    display:flex; align-items:center; gap:12px; padding:14px 16px;
+    background:rgba(18,10,28,.5); border:1px solid rgba(255,255,255,.08);
+    color:#fff; text-decoration:none; border-radius:13px;
+    -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
     transition:background .2s,border-color .2s,transform .2s,box-shadow .2s;
   }
   .slink:hover{ background:rgba(255,60,180,.1); border-color:var(--pink); transform:translateY(-3px); box-shadow:0 6px 20px rgba(255,60,180,.28); }
@@ -378,7 +389,7 @@
 
   /* ② 히어로 타이틀 — 색수차 + 글리치 + 잔상 */
   .main-title{
-    animation:title-chroma 3.2s ease-in-out infinite, title-glitch 7s steps(1) infinite;
+    animation:title-glitch 7s steps(1) infinite;
     will-change:transform;
   }
   @keyframes title-chroma{
@@ -418,8 +429,8 @@
     border-radius:18px; text-decoration:none; color:#fff; overflow:hidden;
     background:linear-gradient(180deg, rgba(26,16,38,.82), rgba(13,8,21,.92));
     border:1px solid color-mix(in srgb, var(--c) 26%, transparent);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 14px 34px rgba(0,0,0,.45);
-    -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.1), 0 16px 38px rgba(0,0,0,.46);
+    -webkit-backdrop-filter:blur(13px) saturate(1.15); backdrop-filter:blur(13px) saturate(1.15);
     transform:translateY(18px); opacity:0;
     transition:transform .55s cubic-bezier(.2,.8,.2,1), opacity .55s, border-color .3s, box-shadow .3s; }
   .hcard.in{ transform:translateY(0); opacity:1; }
