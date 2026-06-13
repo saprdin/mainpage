@@ -5,3 +5,4 @@
 .assetsignore
 node_modules
 *.md
+_*
